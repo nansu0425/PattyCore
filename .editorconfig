@@ -3,7 +3,7 @@ root = true
 
 [*]
 
-# BootStudy settings
+# PattyNet settings
 
 charset = utf-8-bom
 indent_style = space
