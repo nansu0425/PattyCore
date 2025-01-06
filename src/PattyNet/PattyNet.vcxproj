@@ -18,6 +18,9 @@
       <Platform>x64</Platform>
     </ProjectConfiguration>
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Include.hpp" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
@@ -72,19 +75,23 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <OutDir>$(SolutionDir)bin\$(Configuration)\</OutDir>
-    <IncludePath>$(SolutionDir)src\PattyNet\;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)src\;$(IncludePath)</IncludePath>
+    <ExternalIncludePath>$(SolutionDir)lib\asio-1.30.2\include;$(ExternalIncludePath)</ExternalIncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <OutDir>$(SolutionDir)bin\$(Configuration)\</OutDir>
-    <IncludePath>$(SolutionDir)src\PattyNet\;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)src\;$(IncludePath)</IncludePath>
+    <ExternalIncludePath>$(SolutionDir)lib\asio-1.30.2\include;$(ExternalIncludePath)</ExternalIncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <OutDir>$(SolutionDir)bin\$(Configuration)\</OutDir>
-    <IncludePath>$(SolutionDir)src\PattyNet\;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)src\;$(IncludePath)</IncludePath>
+    <ExternalIncludePath>$(SolutionDir)lib\asio-1.30.2\include;$(ExternalIncludePath)</ExternalIncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <OutDir>$(SolutionDir)bin\$(Configuration)\</OutDir>
-    <IncludePath>$(SolutionDir)src\PattyNet\;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)src\;$(IncludePath)</IncludePath>
+    <ExternalIncludePath>$(SolutionDir)lib\asio-1.30.2\include;$(ExternalIncludePath)</ExternalIncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
