@@ -6,12 +6,26 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Pch.hpp" />
-    <ClInclude Include="..\PattyNet\Include.hpp">
+    <ClInclude Include="..\PattyNet\PattyNet\ClientServiceBase.hpp">
       <Filter>PattyNet</Filter>
     </ClInclude>
-    <ClInclude Include="..\PattyNet\PattyNet.hpp">
+    <ClInclude Include="..\PattyNet\PattyNet\Include.hpp">
       <Filter>PattyNet</Filter>
     </ClInclude>
+    <ClInclude Include="..\PattyNet\PattyNet\Message.hpp">
+      <Filter>PattyNet</Filter>
+    </ClInclude>
+    <ClInclude Include="..\PattyNet\PattyNet\ServerServiceBase.hpp">
+      <Filter>PattyNet</Filter>
+    </ClInclude>
+    <ClInclude Include="..\PattyNet\PattyNet\ServiceBase.hpp">
+      <Filter>PattyNet</Filter>
+    </ClInclude>
+    <ClInclude Include="..\PattyNet\PattyNet\Session.hpp">
+      <Filter>PattyNet</Filter>
+    </ClInclude>
+    <ClInclude Include="Service.hpp" />
+    <ClInclude Include="MessageId.hpp" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="PattyNet">

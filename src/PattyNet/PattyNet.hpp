@@ -1,3 +1,4 @@
 ﻿#pragma once
 
-#include <Include.hpp>
+#include <PattyNet/ServerServiceBase.hpp>
+#include <PattyNet/ClientServiceBase.hpp>

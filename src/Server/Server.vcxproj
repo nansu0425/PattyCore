@@ -68,19 +68,19 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <OutDir>$(SolutionDir)bin\$(Configuration)\</OutDir>
-    <IncludePath>$(SolutionDir)src\PattyNet;$(SolutionDir)lib\asio-1.30.2\include;$(ProjectDir);$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)src\;$(SolutionDir)src\PattyNet;$(SolutionDir)lib\asio-1.30.2\include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <OutDir>$(SolutionDir)bin\$(Configuration)\</OutDir>
-    <IncludePath>$(SolutionDir)src\PattyNet;$(SolutionDir)lib\asio-1.30.2\include;$(ProjectDir);$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)src\;$(SolutionDir)src\PattyNet;$(SolutionDir)lib\asio-1.30.2\include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <OutDir>$(SolutionDir)bin\$(Configuration)\</OutDir>
-    <IncludePath>$(SolutionDir)src\PattyNet;$(SolutionDir)lib\asio-1.30.2\include;$(ProjectDir);$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)src\;$(SolutionDir)src\PattyNet;$(SolutionDir)lib\asio-1.30.2\include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <OutDir>$(SolutionDir)bin\$(Configuration)\</OutDir>
-    <IncludePath>$(SolutionDir)src\PattyNet;$(SolutionDir)lib\asio-1.30.2\include;$(ProjectDir);$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)src\;$(SolutionDir)src\PattyNet;$(SolutionDir)lib\asio-1.30.2\include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -90,7 +90,7 @@
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <PrecompiledHeader>Use</PrecompiledHeader>
-      <PrecompiledHeaderFile>Pch.hpp</PrecompiledHeaderFile>
+      <PrecompiledHeaderFile>Server/Pch.hpp</PrecompiledHeaderFile>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -108,7 +108,7 @@
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <PrecompiledHeader>Use</PrecompiledHeader>
-      <PrecompiledHeaderFile>Pch.hpp</PrecompiledHeaderFile>
+      <PrecompiledHeaderFile>Server/Pch.hpp</PrecompiledHeaderFile>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -126,7 +126,7 @@
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <PrecompiledHeader>Use</PrecompiledHeader>
-      <PrecompiledHeaderFile>Pch.hpp</PrecompiledHeaderFile>
+      <PrecompiledHeaderFile>Server/Pch.hpp</PrecompiledHeaderFile>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -144,7 +144,7 @@
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <PrecompiledHeader>Use</PrecompiledHeader>
-      <PrecompiledHeaderFile>Pch.hpp</PrecompiledHeaderFile>
+      <PrecompiledHeaderFile>Server/Pch.hpp</PrecompiledHeaderFile>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -164,9 +164,15 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\PattyNet\Include.hpp" />
-    <ClInclude Include="..\PattyNet\PattyNet.hpp" />
+    <ClInclude Include="..\PattyNet\PattyNet\ClientServiceBase.hpp" />
+    <ClInclude Include="..\PattyNet\PattyNet\Include.hpp" />
+    <ClInclude Include="..\PattyNet\PattyNet\Message.hpp" />
+    <ClInclude Include="..\PattyNet\PattyNet\ServerServiceBase.hpp" />
+    <ClInclude Include="..\PattyNet\PattyNet\ServiceBase.hpp" />
+    <ClInclude Include="..\PattyNet\PattyNet\Session.hpp" />
+    <ClInclude Include="MessageId.hpp" />
     <ClInclude Include="Pch.hpp" />
+    <ClInclude Include="Service.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
