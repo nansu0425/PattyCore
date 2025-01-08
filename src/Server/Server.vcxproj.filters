@@ -6,5 +6,16 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Pch.hpp" />
+    <ClInclude Include="..\PattyNet\Include.hpp">
+      <Filter>PattyNet</Filter>
+    </ClInclude>
+    <ClInclude Include="..\PattyNet\PattyNet.hpp">
+      <Filter>PattyNet</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="PattyNet">
+      <UniqueIdentifier>{9b4fe2ed-8fa8-4f0f-9491-faef5fd681e5}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
 </Project>
