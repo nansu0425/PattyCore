@@ -1,4 +1,4 @@
-﻿#include <Server/Pch.hpp>
+﻿#include <Pch.hpp>
 
 int main()
 {

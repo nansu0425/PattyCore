@@ -1,3 +1,3 @@
 ﻿#pragma once
 
-#include <PattyNet/Include.hpp>
+#include <PattyNet.hpp>
