@@ -26,6 +26,11 @@
     </ClInclude>
     <ClInclude Include="Service.hpp" />
     <ClInclude Include="MessageId.hpp" />
+    <ClInclude Include="..\PattyNet\PattyNet\Types.hpp">
+      <Filter>PattyNet</Filter>
+    </ClInclude>
+    <ClInclude Include="Types.hpp" />
+    <ClInclude Include="Include.hpp" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="PattyNet">

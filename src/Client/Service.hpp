@@ -8,9 +8,6 @@ namespace Client
     class Service : public PattyNet::ClientServiceBase
     {
     private:
-        using Message       = PattyNet::Message;
-        using TimePoint     = std::chrono::steady_clock::time_point;
-
         struct EchoTimer
         {
             using Pointer   = std::unique_ptr<EchoTimer>;
@@ -96,7 +93,7 @@ namespace Client
 
             _echoTimers[id]->start = std::chrono::steady_clock::now();
 
-            Message message;
+            PattyNet::Message message;
             message.header.id = static_cast<PattyNet::Message::Id>(MessageId::Echo);
 
             SendMessageAsync(std::move(pSession), std::move(message));

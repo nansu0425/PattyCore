@@ -170,9 +170,12 @@
     <ClInclude Include="..\PattyNet\PattyNet\ServerServiceBase.hpp" />
     <ClInclude Include="..\PattyNet\PattyNet\ServiceBase.hpp" />
     <ClInclude Include="..\PattyNet\PattyNet\Session.hpp" />
+    <ClInclude Include="..\PattyNet\PattyNet\Types.hpp" />
+    <ClInclude Include="Include.hpp" />
     <ClInclude Include="MessageId.hpp" />
     <ClInclude Include="Pch.hpp" />
     <ClInclude Include="Service.hpp" />
+    <ClInclude Include="Types.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
