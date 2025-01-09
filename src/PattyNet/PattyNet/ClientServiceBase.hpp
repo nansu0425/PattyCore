@@ -7,7 +7,6 @@ namespace PattyNet
     class ClientServiceBase : public ServiceBase
     {
     protected:
-        using Endpoints         = Session::Endpoints;
         using SocketBuffer      = std::queue<Tcp::socket>;
 
     public:

@@ -7,15 +7,7 @@ namespace PattyNet
     class ServiceBase
     {
     protected:
-        using ThreadPool            = asio::thread_pool;
-        using WorkGuard             = asio::executor_work_guard<ThreadPool::executor_type>;
-        using Strand                = asio::strand<ThreadPool::executor_type>;
-        using Timer                 = asio::steady_timer;
-        using Seconds               = std::chrono::seconds;
-        using MicroSeconds          = std::chrono::microseconds;
         using TickRate              = uint32_t;
-        using ErrorCode             = Session::ErrorCode;
-        using Tcp                   = asio::ip::tcp;
         using SessionPointer        = Session::Pointer;
         using SessionId             = Session::Id;
         using SessionMap            = std::unordered_map<SessionId, SessionPointer>;

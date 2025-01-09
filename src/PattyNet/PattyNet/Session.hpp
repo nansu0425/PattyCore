@@ -13,11 +13,6 @@ namespace PattyNet
         using Id                    = uint32_t;
         using OwnedMessage          = OwnedMessage<Session>;
         using OwnedMessageBuffer    = OwnedMessage::Buffer;
-        using ThreadPool            = asio::thread_pool;
-        using Strand                = asio::strand<ThreadPool::executor_type>;
-        using ErrorCode             = asio::error_code;
-        using Tcp                   = asio::ip::tcp;
-        using Endpoints             = asio::ip::basic_resolver_results<Tcp>;
         using CloseCallback         = std::function<void(Pointer)>;
         using MessageBuffer         = Message::Buffer;
 
