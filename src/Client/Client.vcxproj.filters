@@ -6,34 +6,34 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Pch.hpp" />
-    <ClInclude Include="..\PattyNet\PattyNet\ClientServiceBase.hpp">
-      <Filter>PattyNet</Filter>
-    </ClInclude>
-    <ClInclude Include="..\PattyNet\PattyNet\Include.hpp">
-      <Filter>PattyNet</Filter>
-    </ClInclude>
-    <ClInclude Include="..\PattyNet\PattyNet\Message.hpp">
-      <Filter>PattyNet</Filter>
-    </ClInclude>
-    <ClInclude Include="..\PattyNet\PattyNet\ServerServiceBase.hpp">
-      <Filter>PattyNet</Filter>
-    </ClInclude>
-    <ClInclude Include="..\PattyNet\PattyNet\ServiceBase.hpp">
-      <Filter>PattyNet</Filter>
-    </ClInclude>
-    <ClInclude Include="..\PattyNet\PattyNet\Session.hpp">
-      <Filter>PattyNet</Filter>
-    </ClInclude>
     <ClInclude Include="Service.hpp" />
     <ClInclude Include="MessageId.hpp" />
-    <ClInclude Include="..\PattyNet\PattyNet\Types.hpp">
-      <Filter>PattyNet</Filter>
-    </ClInclude>
     <ClInclude Include="Types.hpp" />
     <ClInclude Include="Include.hpp" />
+    <ClInclude Include="..\PattyCore\PattyCore\ClientServiceBase.hpp">
+      <Filter>PattyCore</Filter>
+    </ClInclude>
+    <ClInclude Include="..\PattyCore\PattyCore\Include.hpp">
+      <Filter>PattyCore</Filter>
+    </ClInclude>
+    <ClInclude Include="..\PattyCore\PattyCore\Message.hpp">
+      <Filter>PattyCore</Filter>
+    </ClInclude>
+    <ClInclude Include="..\PattyCore\PattyCore\ServerServiceBase.hpp">
+      <Filter>PattyCore</Filter>
+    </ClInclude>
+    <ClInclude Include="..\PattyCore\PattyCore\ServiceBase.hpp">
+      <Filter>PattyCore</Filter>
+    </ClInclude>
+    <ClInclude Include="..\PattyCore\PattyCore\Session.hpp">
+      <Filter>PattyCore</Filter>
+    </ClInclude>
+    <ClInclude Include="..\PattyCore\PattyCore\Types.hpp">
+      <Filter>PattyCore</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <Filter Include="PattyNet">
+    <Filter Include="PattyCore">
       <UniqueIdentifier>{05e32bf8-2dbb-4756-90ef-00f62fcfde78}</UniqueIdentifier>
     </Filter>
   </ItemGroup>

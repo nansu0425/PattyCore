@@ -8,7 +8,7 @@ namespace Client
      *    MessageId    *
      *-----------------*/
 
-    enum class MessageId : PattyNet::Message::Id
+    enum class MessageId : PattyCore::Message::Id
     {
         Echo = 1000,
     };

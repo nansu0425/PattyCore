@@ -8,7 +8,7 @@ namespace Server
      *    MessageId    *
      *-----------------*/
 
-    enum class MessageId : PattyNet::Message::Id
+    enum class MessageId : PattyCore::Message::Id
     {
         Accept = 500,
         Deny,

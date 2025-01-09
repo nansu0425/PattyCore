@@ -1,4 +1,4 @@
 ﻿#pragma once
 
-#include <PattyNet.hpp>
+#include <PattyCore.hpp>
 #include <Server/Types.hpp>

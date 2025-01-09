@@ -3,7 +3,7 @@ root = true
 
 [*]
 
-# PattyNet settings
+# PattyCore settings
 
 charset = utf-8-bom
 indent_style = space

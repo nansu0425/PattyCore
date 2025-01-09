@@ -9,10 +9,10 @@ namespace Server
      *    Service    *
      *---------------*/
 
-    class Service : public PattyNet::ServerServiceBase
+    class Service : public PattyCore::ServerServiceBase
     {
     private:
-        using Message       = PattyNet::Message;
+        using Message       = PattyCore::Message;
 
     public:
         Service(size_t nWorkers,
@@ -46,7 +46,7 @@ namespace Server
         void HandleEcho(SessionPointer pSession)
         {
             Message message;
-            message.header.id = static_cast<PattyNet::Message::Id>(MessageId::Echo);
+            message.header.id = static_cast<PattyCore::Message::Id>(MessageId::Echo);
 
             SendMessageAsync(std::move(pSession), std::move(message));
         }

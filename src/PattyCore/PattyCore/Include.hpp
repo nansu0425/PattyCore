@@ -27,8 +27,8 @@
 #define ASIO_STANDALONE
 #include <asio.hpp>
 
-/*----------------*
- *    PattyNet    *
- *----------------*/
+/*-----------------*
+ *    PattyCore    *
+ *-----------------*/
 
-#include <PattyNet/Types.hpp>
+#include <PattyCore/Types.hpp>

@@ -1,8 +1,8 @@
 ﻿#pragma once
 
-#include <PattyNet/Session.hpp>
+#include <PattyCore/Session.hpp>
 
-namespace PattyNet
+namespace PattyCore
 {
     /*-------------------*
      *    ServiceBase    *

@@ -1,9 +1,9 @@
 ﻿#pragma once
 
-#include <PattyNet/Include.hpp>
-#include <PattyNet/Message.hpp>
+#include <PattyCore/Include.hpp>
+#include <PattyCore/Message.hpp>
 
-namespace PattyNet
+namespace PattyCore
 {
     /*---------------*
      *    Session    *

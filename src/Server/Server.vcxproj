@@ -68,19 +68,19 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <OutDir>$(SolutionDir)bin\$(Configuration)\</OutDir>
-    <IncludePath>$(SolutionDir)src\;$(SolutionDir)src\PattyNet;$(SolutionDir)lib\asio-1.30.2\include;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)src\;$(SolutionDir)src\PattyCore;$(SolutionDir)lib\asio-1.30.2\include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <OutDir>$(SolutionDir)bin\$(Configuration)\</OutDir>
-    <IncludePath>$(SolutionDir)src\;$(SolutionDir)src\PattyNet;$(SolutionDir)lib\asio-1.30.2\include;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)src\;$(SolutionDir)src\PattyCore;$(SolutionDir)lib\asio-1.30.2\include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <OutDir>$(SolutionDir)bin\$(Configuration)\</OutDir>
-    <IncludePath>$(SolutionDir)src\;$(SolutionDir)src\PattyNet;$(SolutionDir)lib\asio-1.30.2\include;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)src\;$(SolutionDir)src\PattyCore;$(SolutionDir)lib\asio-1.30.2\include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <OutDir>$(SolutionDir)bin\$(Configuration)\</OutDir>
-    <IncludePath>$(SolutionDir)src\;$(SolutionDir)src\PattyNet;$(SolutionDir)lib\asio-1.30.2\include;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)src\;$(SolutionDir)src\PattyCore;$(SolutionDir)lib\asio-1.30.2\include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -164,13 +164,13 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\PattyNet\PattyNet\ClientServiceBase.hpp" />
-    <ClInclude Include="..\PattyNet\PattyNet\Include.hpp" />
-    <ClInclude Include="..\PattyNet\PattyNet\Message.hpp" />
-    <ClInclude Include="..\PattyNet\PattyNet\ServerServiceBase.hpp" />
-    <ClInclude Include="..\PattyNet\PattyNet\ServiceBase.hpp" />
-    <ClInclude Include="..\PattyNet\PattyNet\Session.hpp" />
-    <ClInclude Include="..\PattyNet\PattyNet\Types.hpp" />
+    <ClInclude Include="..\PattyCore\PattyCore\ClientServiceBase.hpp" />
+    <ClInclude Include="..\PattyCore\PattyCore\Include.hpp" />
+    <ClInclude Include="..\PattyCore\PattyCore\Message.hpp" />
+    <ClInclude Include="..\PattyCore\PattyCore\ServerServiceBase.hpp" />
+    <ClInclude Include="..\PattyCore\PattyCore\ServiceBase.hpp" />
+    <ClInclude Include="..\PattyCore\PattyCore\Session.hpp" />
+    <ClInclude Include="..\PattyCore\PattyCore\Types.hpp" />
     <ClInclude Include="Include.hpp" />
     <ClInclude Include="MessageId.hpp" />
     <ClInclude Include="Pch.hpp" />

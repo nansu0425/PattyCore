@@ -1,8 +1,8 @@
 ﻿#pragma once
 
-#include <PattyNet/Include.hpp>
+#include <PattyCore/Include.hpp>
 
-namespace PattyNet
+namespace PattyCore
 {
     /*---------------*
      *    Message    *
