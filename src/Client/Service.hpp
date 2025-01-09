@@ -5,9 +5,17 @@
 
 namespace Client
 {
+    /*---------------*
+     *    Service    *
+     *---------------*/
+
     class Service : public PattyNet::ClientServiceBase
     {
     private:
+        /*-----------------*
+         *    EchoTimer    *
+         *-----------------*/
+
         struct EchoTimer
         {
             using Pointer   = std::unique_ptr<EchoTimer>;

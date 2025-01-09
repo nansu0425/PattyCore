@@ -4,6 +4,10 @@
 
 namespace Client
 {
+    /*-----------------*
+     *    MessageId    *
+     *-----------------*/
+
     enum class MessageId : PattyNet::Message::Id
     {
         Echo = 1000,

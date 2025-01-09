@@ -5,6 +5,10 @@
 
 namespace Server
 {
+    /*---------------*
+     *    Service    *
+     *---------------*/
+
     class Service : public PattyNet::ServerServiceBase
     {
     private:

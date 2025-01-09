@@ -4,12 +4,20 @@
 
 namespace PattyNet
 {
+    /*---------------*
+     *    Message    *
+     *---------------*/
+
     struct Message
     {
         using Id            = uint32_t;
         using Size          = uint32_t;
         using Payload       = std::vector<std::byte>;
         using Buffer        = std::queue<Message>;
+
+        /*--------------*
+         *    Header    *
+         *--------------*/
 
         struct Header
         {
@@ -64,6 +72,10 @@ namespace PattyNet
             return os;
         }
     };
+
+    /*--------------------*
+     *    OwnedMessage    *
+     *--------------------*/
 
     template<typename TOwner>
     struct OwnedMessage

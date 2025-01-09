@@ -4,6 +4,10 @@
 
 namespace Server
 {
+    /*-----------------*
+     *    MessageId    *
+     *-----------------*/
+
     enum class MessageId : PattyNet::Message::Id
     {
         Accept = 500,

@@ -4,6 +4,10 @@
 
 namespace PattyNet
 {
+    /*-------------------------*
+     *    ServerServiceBase    *
+     *-------------------------*/
+
     class ServerServiceBase : public ServiceBase
     {
     public:
