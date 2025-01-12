@@ -5,7 +5,7 @@ int main()
 {
     try
     {
-        Server::Service service(4, 0, 60000);
+        PattyCore::Server::Service service(4, 0, 60000);
         service.Start();
 
         service.JoinWorkers();

@@ -3,7 +3,7 @@
 #include <Client/MessageId.hpp>
 #include <Server/MessageId.hpp>
 
-namespace Client
+namespace PattyCore::Client
 {
     /*---------------*
      *    Service    *

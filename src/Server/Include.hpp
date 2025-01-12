@@ -1,4 +1,3 @@
 ﻿#pragma once
 
-#include <PattyCore.hpp>
-#include <Server/Types.hpp>
+#include <PattyCore/ServerServiceBase.hpp>

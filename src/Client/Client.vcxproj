@@ -68,19 +68,19 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <OutDir>$(SolutionDir)bin\$(Configuration)\</OutDir>
-    <IncludePath>$(SolutionDir)src;$(SolutionDir)src\PattyCore;$(SolutionDir)lib\asio-1.30.2\include;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)src;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <OutDir>$(SolutionDir)bin\$(Configuration)\</OutDir>
-    <IncludePath>$(SolutionDir)src;$(SolutionDir)src\PattyCore;$(SolutionDir)lib\asio-1.30.2\include;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)src;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <OutDir>$(SolutionDir)bin\$(Configuration)\</OutDir>
-    <IncludePath>$(SolutionDir)src;$(SolutionDir)src\PattyCore;$(SolutionDir)lib\asio-1.30.2\include;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)src;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <OutDir>$(SolutionDir)bin\$(Configuration)\</OutDir>
-    <IncludePath>$(SolutionDir)src;$(SolutionDir)src\PattyCore;$(SolutionDir)lib\asio-1.30.2\include;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)src;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -164,18 +164,16 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\PattyCore\PattyCore\ClientServiceBase.hpp" />
-    <ClInclude Include="..\PattyCore\PattyCore\Include.hpp" />
-    <ClInclude Include="..\PattyCore\PattyCore\Message.hpp" />
-    <ClInclude Include="..\PattyCore\PattyCore\ServerServiceBase.hpp" />
-    <ClInclude Include="..\PattyCore\PattyCore\ServiceBase.hpp" />
-    <ClInclude Include="..\PattyCore\PattyCore\Session.hpp" />
-    <ClInclude Include="..\PattyCore\PattyCore\Types.hpp" />
+    <ClInclude Include="..\PattyCore\ClientServiceBase.hpp" />
+    <ClInclude Include="..\PattyCore\Include.hpp" />
+    <ClInclude Include="..\PattyCore\Message.hpp" />
+    <ClInclude Include="..\PattyCore\ServiceBase.hpp" />
+    <ClInclude Include="..\PattyCore\Session.hpp" />
+    <ClInclude Include="..\PattyCore\Types.hpp" />
     <ClInclude Include="Include.hpp" />
     <ClInclude Include="MessageId.hpp" />
     <ClInclude Include="Pch.hpp" />
     <ClInclude Include="Service.hpp" />
-    <ClInclude Include="Types.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -2,7 +2,7 @@
 
 #include <Client/Include.hpp>
 
-namespace Client
+namespace PattyCore::Client
 {
     /*-----------------*
      *    MessageId    *

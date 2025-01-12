@@ -9,26 +9,22 @@
     <ClInclude Include="MessageId.hpp" />
     <ClInclude Include="Service.hpp" />
     <ClInclude Include="Include.hpp" />
-    <ClInclude Include="Types.hpp" />
-    <ClInclude Include="..\PattyCore\PattyCore\ClientServiceBase.hpp">
+    <ClInclude Include="..\PattyCore\Include.hpp">
       <Filter>PattyCore</Filter>
     </ClInclude>
-    <ClInclude Include="..\PattyCore\PattyCore\Include.hpp">
+    <ClInclude Include="..\PattyCore\Message.hpp">
       <Filter>PattyCore</Filter>
     </ClInclude>
-    <ClInclude Include="..\PattyCore\PattyCore\Message.hpp">
+    <ClInclude Include="..\PattyCore\ServerServiceBase.hpp">
       <Filter>PattyCore</Filter>
     </ClInclude>
-    <ClInclude Include="..\PattyCore\PattyCore\ServerServiceBase.hpp">
+    <ClInclude Include="..\PattyCore\ServiceBase.hpp">
       <Filter>PattyCore</Filter>
     </ClInclude>
-    <ClInclude Include="..\PattyCore\PattyCore\ServiceBase.hpp">
+    <ClInclude Include="..\PattyCore\Session.hpp">
       <Filter>PattyCore</Filter>
     </ClInclude>
-    <ClInclude Include="..\PattyCore\PattyCore\Session.hpp">
-      <Filter>PattyCore</Filter>
-    </ClInclude>
-    <ClInclude Include="..\PattyCore\PattyCore\Types.hpp">
+    <ClInclude Include="..\PattyCore\Types.hpp">
       <Filter>PattyCore</Filter>
     </ClInclude>
   </ItemGroup>

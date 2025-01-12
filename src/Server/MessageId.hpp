@@ -2,7 +2,7 @@
 
 #include <Server/Include.hpp>
 
-namespace Server
+namespace PattyCore::Server
 {
     /*-----------------*
      *    MessageId    *

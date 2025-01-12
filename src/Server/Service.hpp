@@ -3,7 +3,7 @@
 #include <Server/MessageId.hpp>
 #include <Client/MessageId.hpp>
 
-namespace Server
+namespace PattyCore::Server
 {
     /*---------------*
      *    Service    *
@@ -11,9 +11,6 @@ namespace Server
 
     class Service : public PattyCore::ServerServiceBase
     {
-    private:
-        using Message       = PattyCore::Message;
-
     public:
         Service(size_t nWorkers,
                 size_t nMaxReceivedMessages,
