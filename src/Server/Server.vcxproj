@@ -166,6 +166,7 @@
   <ItemGroup>
     <ClInclude Include="..\PattyCore\Include.hpp" />
     <ClInclude Include="..\PattyCore\Message.hpp" />
+    <ClInclude Include="..\PattyCore\Sender.hpp" />
     <ClInclude Include="..\PattyCore\ServerServiceBase.hpp" />
     <ClInclude Include="..\PattyCore\ServiceBase.hpp" />
     <ClInclude Include="..\PattyCore\Session.hpp" />

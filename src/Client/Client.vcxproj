@@ -167,6 +167,7 @@
     <ClInclude Include="..\PattyCore\ClientServiceBase.hpp" />
     <ClInclude Include="..\PattyCore\Include.hpp" />
     <ClInclude Include="..\PattyCore\Message.hpp" />
+    <ClInclude Include="..\PattyCore\Sender.hpp" />
     <ClInclude Include="..\PattyCore\ServiceBase.hpp" />
     <ClInclude Include="..\PattyCore\Session.hpp" />
     <ClInclude Include="..\PattyCore\Types.hpp" />
