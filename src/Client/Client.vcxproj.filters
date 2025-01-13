@@ -27,7 +27,7 @@
     <ClInclude Include="..\PattyCore\Types.hpp">
       <Filter>PattyCore</Filter>
     </ClInclude>
-    <ClInclude Include="..\PattyCore\Sender.hpp">
+    <ClInclude Include="..\PattyCore\MessageSender.hpp">
       <Filter>PattyCore</Filter>
     </ClInclude>
   </ItemGroup>

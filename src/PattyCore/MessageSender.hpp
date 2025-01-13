@@ -4,14 +4,18 @@
 
 namespace PattyCore
 {
-    class Sender
+    /*---------------------*
+     *    MessageSender    *
+     *---------------------*/
+
+    class MessageSender
     {
     public:
         using Buffer        = Message::Buffer;
 
-        Sender(ThreadPool& workers,
-               Tcp::socket& socket,
-               Strand& socketStrand)
+        MessageSender(ThreadPool& workers,
+                      Tcp::socket& socket,
+                      Strand& socketStrand)
             : m_socket(socket)
             , m_socketStrand(socketStrand)
             , m_strand(asio::make_strand(workers))
@@ -19,7 +23,7 @@ namespace PattyCore
         {}
 
         template<typename TMessage>
-        void PushMessageAsync(TMessage&& message)
+        void SendAsync(TMessage&& message)
         {
             asio::post(m_strand,
                        [this, 
