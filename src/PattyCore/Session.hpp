@@ -1,7 +1,6 @@
 ﻿#pragma once
 
 #include <PattyCore/Include.hpp>
-#include <PattyCore/Message.hpp>
 
 namespace PattyCore
 {
@@ -9,18 +8,13 @@ namespace PattyCore
      *    Session    *
      *---------------*/
 
-    class Session 
+    class Session
         : public std::enable_shared_from_this<Session>
     {
     public:
-        using Pointer               = std::shared_ptr<Session>;
-        using Id                    = uint32_t;
-        using OwnedMessage          = OwnedMessage<Session>;
-        using OwnedMessageBuffer    = OwnedMessage::Buffer;
-        using CloseCallback         = std::function<void(Pointer)>;
-        using MessageBuffer         = Message::Buffer;
+        using Id                = uint32_t;
+        using Pointer           = std::shared_ptr<Session>;
 
-    public:
         ~Session()
         {
             std::cout << "[" << _id << "] Session destroyed: " << _endpoint << "\n";
@@ -28,42 +22,53 @@ namespace PattyCore
 
         static Pointer Create(ThreadPool& workers,
                               Tcp::socket&& socket,
-                              Id id,
-                              CloseCallback onSessionClosed,
-                              OwnedMessageBuffer& receiveBuffer,
-                              Strand& receiveStrand)
+                              Id id)
         {
             return Pointer(new Session(workers,
                                        std::move(socket),
-                                       id,
-                                       std::move(onSessionClosed),
-                                       receiveBuffer,
-                                       receiveStrand));
+                                       id));
         }
 
-        void CloseAsync()
+        template<typename TBuffer, typename TCallback>
+        void WriteAsync(TBuffer&& buffer, TCallback&& callback)
         {
-            asio::post(_socketStrand,
-                       [pSelf = shared_from_this()]()
+            asio::post(_strand,
+                       [pSelf = shared_from_this(),
+                        buffer = std::forward<TBuffer>(buffer),
+                        callback = std::forward<TCallback>(callback)]
+                       () mutable
                        {
-                           pSelf->Close();
+                           asio::async_write(pSelf->_socket,
+                                             std::move(buffer),
+                                             std::move(callback));
                        });
         }
 
-        template<typename TMessage>
-        void SendMessageAsync(TMessage&& message)
+        template<typename TBuffer, typename TCallback>
+        void ReadAsync(TBuffer&& buffer, TCallback&& callback)
         {
-            asio::post(_sendStrand,
-                       [pSelf = shared_from_this(), 
-                       message = std::forward<TMessage>(message)]() mutable
+            asio::post(_strand,
+                       [pSelf = shared_from_this(),
+                        buffer = std::forward<TBuffer>(buffer),
+                        callback = std::forward<TCallback>(callback)]
+                       () mutable
                        {
-                           pSelf->PushMessageToSendBuffer(std::move(message));
+                           asio::async_read(pSelf->_socket,
+                                            std::move(buffer),
+                                            std::move(callback));
                        });
         }
 
-        void ReceiveMessageAsync()
+        template<typename TCallback>
+        void CloseAsync(TCallback&& callback)
         {
-            ReadMessageAsync();
+            asio::post(_strand,
+                       [pSelf = shared_from_this(),
+                        callback = std::forward<TCallback>(callback)]
+                       () mutable
+                       {
+                           pSelf->Close(std::move(callback));
+                       });
         }
 
         Id GetId() const
@@ -76,272 +81,35 @@ namespace PattyCore
             return _endpoint;
         }
 
-        friend std::ostream& operator<<(std::ostream& os, Pointer pSession)
-        {
-            os << "[" << pSession->GetId() << "]";
-
-            return os;
-        }
-
     private:
         Session(ThreadPool& workers,
                 Tcp::socket&& socket,
-                Id id,
-                CloseCallback&& onSessionClosed,
-                OwnedMessageBuffer& receiveBuffer,
-                Strand& receiveStrand)
-            : _workers(workers)
-            , _socket(std::move(socket))
-            , _socketStrand(asio::make_strand(workers))
+                Id id)
+            : _socket(std::move(socket))
+            , _strand(asio::make_strand(workers))
             , _id(id)
             , _endpoint(_socket.remote_endpoint())
-            , _onSessionClosed(std::move(onSessionClosed))
-            , _receiveBuffer(receiveBuffer)
-            , _receiveStrand(receiveStrand)
-            , _sendStrand(asio::make_strand(workers))
-            , _isWritingMessage(false)
         {}
 
-        void Close()
+        template<typename TCallback>
+        void Close(TCallback&& callback)
         {
-            if (_socket.is_open())
-            {
-                _socket.close();
-                _onSessionClosed(shared_from_this());
-            }
-        }
-
-        template<typename TMessage>
-        void PushMessageToSendBuffer(TMessage&& message)
-        {
-            _sendBuffer.emplace(std::forward<TMessage>(message));
-
-            WriteMessageAsync();
-        }
-
-        void WriteMessageAsync()
-        {
-            if (_isWritingMessage ||
-                _sendBuffer.empty())
+            if (!_socket.is_open())
             {
                 return;
             }
 
-            _writeMessage = std::move(_sendBuffer.front());
-            _sendBuffer.pop();
+            ErrorCode error;
+            _socket.close(error);
 
-            asio::post(_socketStrand,
-                       [pSelf = shared_from_this()]()
-                       {
-                           pSelf->WriteHeaderAsync();
-                       });
-
-            _isWritingMessage = true;
-        }
-
-        void WriteHeaderAsync()
-        {
-            asio::async_write(_socket,
-                              asio::buffer(&_writeMessage.header,
-                                           sizeof(Message::Header)),
-                              [pSelf = shared_from_this()](const ErrorCode& error,
-                                                           const size_t nBytesTransferred)
-                              {
-                                  pSelf->OnWriteHeaderCompleted(error, nBytesTransferred);
-                              });
-        }
-
-        void OnWriteHeaderCompleted(const ErrorCode& error, const size_t nBytesTransferred)
-        {
-            if (error)
-            {
-                std::cerr << "[" << _id << "] Failed to write header: " << error << "\n";
-            }
-            else
-            {
-                assert(sizeof(Message::Header) == nBytesTransferred);
-
-                // The size of payload is bigger than 0
-                if (_writeMessage.header.size > sizeof(Message::Header))
-                {
-                    asio::post(_socketStrand,
-                               [pSelf = shared_from_this()]()
-                               {
-                                   pSelf->WritePayloadAsync();
-                               });
-
-                    return;
-                }
-            }
-
-            asio::post(_sendStrand,
-                       [pSelf = shared_from_this(), error]
-                       {
-                           pSelf->OnWriteMessageCompleted(error);
-                       });
-        }
-
-        void WritePayloadAsync()
-        {
-            asio::async_write(_socket,
-                              asio::buffer(_writeMessage.payload.data(),
-                                           _writeMessage.payload.size()),
-                              [pSelf = shared_from_this()](const ErrorCode& error,
-                                                           const size_t nBytesTransferred)
-                              {
-                                  pSelf->OnWritePayloadCompleted(error, nBytesTransferred);
-                              });
-        }
-
-        void OnWritePayloadCompleted(const ErrorCode& error, const size_t nBytesTransferred)
-        {
-            if (error)
-            {
-                std::cerr << "[" << _id << "] Failed to write payload: " << error << "\n";
-            }
-            else
-            {
-                assert(nBytesTransferred == _writeMessage.payload.size());
-            }
-
-            asio::post(_sendStrand,
-                       [pSelf = shared_from_this(), error]
-                       {
-                           pSelf->OnWriteMessageCompleted(error);
-                       });
-        }
-
-        void OnWriteMessageCompleted(const ErrorCode& error)
-        {
-            _isWritingMessage = false;
-
-            if (error)
-            {
-                CloseAsync();
-                return;
-            }
-
-            WriteMessageAsync();
-        }
-
-        void ReadMessageAsync()
-        {
-            asio::post(_socketStrand,
-                       [pSelf = shared_from_this()]()
-                       {
-                           pSelf->ReadHeaderAsync();
-                       });
-        }
-
-        void ReadHeaderAsync()
-        {
-            asio::async_read(_socket,
-                             asio::buffer(&_readMessage.header,
-                                          sizeof(Message::Header)),
-                             [pSelf = shared_from_this()](const ErrorCode& error,
-                                                          const size_t nBytesTransferred)
-                             {
-                                 pSelf->OnReadHeaderCompleted(error, nBytesTransferred);
-                             });
-        }
-
-        void OnReadHeaderCompleted(const ErrorCode& error, const size_t nBytesTransferred)
-        {
-            if (error)
-            {
-                std::cerr << "[" << _id << "] Failed to read header: " << error << "\n";
-            }
-            else
-            {
-                assert(nBytesTransferred == sizeof(Message::Header));
-                assert(_readMessage.header.size >= sizeof(Message::Header));
-
-                // The size of payload is bigger than 0
-                if (_readMessage.header.size > sizeof(Message::Header))
-                {
-                    _readMessage.payload.resize(_readMessage.header.size - sizeof(Message::Header));
-
-                    asio::post(_socketStrand,
-                               [pSelf = shared_from_this()]()
-                               {
-                                   pSelf->ReadPayloadAsync();
-                               });
-
-                    return;
-                }
-            }
-
-            OnReadMessageCompleted(error);
-        }
-
-        void ReadPayloadAsync()
-        {
-            asio::async_read(_socket,
-                             asio::buffer(_readMessage.payload.data(),
-                                          _readMessage.payload.size()),
-                             [pSelf = shared_from_this()](const ErrorCode& error,
-                                                          const size_t nBytesTransferred)
-                             {
-                                 pSelf->OnReadPayloadCompleted(error, nBytesTransferred);
-                             });
-        }
-
-        void OnReadPayloadCompleted(const ErrorCode& error, const size_t nBytesTransferred)
-        {
-            if (error)
-            {
-                std::cerr << "[" << _id << "] Failed to read payload: " << error << "\n";
-            }
-            else
-            {
-                assert(_readMessage.payload.size() == nBytesTransferred);
-            }
-
-            OnReadMessageCompleted(error);
-        }
-
-        void OnReadMessageCompleted(const ErrorCode& error)
-        {
-            if (error)
-            {
-                CloseAsync();
-                return;
-            }
-
-            asio::post(_receiveStrand,
-                       [pSelf = shared_from_this()]
-                       {
-                           pSelf->PushMessageToReceiveBuffer();
-                       });
-        }
-
-        void PushMessageToReceiveBuffer()
-        {
-            _receiveBuffer.push(OwnedMessage{shared_from_this(), std::move(_readMessage)});
-
-            ReadMessageAsync();
+            callback(error, _id);
         }
 
     private:
-        ThreadPool&                     _workers;
-        Tcp::socket                     _socket;
-        Strand                          _socketStrand;
-        const Id                        _id;
-        const Tcp::endpoint             _endpoint;
-
-        // Unregister-Destroy
-        CloseCallback                   _onSessionClosed;
-
-        // Receive
-        OwnedMessageBuffer&             _receiveBuffer;
-        Strand&                         _receiveStrand;
-        Message                         _readMessage;
-
-        // Send
-        MessageBuffer                   _sendBuffer;
-        Strand                          _sendStrand;
-        Message                         _writeMessage;
-        bool                            _isWritingMessage;
+        Tcp::socket             _socket;
+        Strand                  _strand;
+        const Id                _id;
+        const Tcp::endpoint     _endpoint;
 
     };
 }

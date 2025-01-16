@@ -67,7 +67,7 @@ namespace PattyCore
 
         friend std::ostream& operator<<(std::ostream& os, const Message& message)
         {
-            os << "[" << message.header.id << "] Size: " << message.header.size << "B\n";
+            os << "Id: " << message.header.id <<  ", Size: " << message.header.size << "B";
 
             return os;
         }
@@ -77,18 +77,22 @@ namespace PattyCore
      *    OwnedMessage    *
      *--------------------*/
 
-    template<typename TOwner>
+    template<typename TOwnerId>
     struct OwnedMessage
     {
-        using OwnerPointer      = std::shared_ptr<TOwner>;
-        using Buffer            = std::queue<OwnedMessage>;
+        using Buffer        = std::queue<OwnedMessage>;
 
-        OwnerPointer    pOwner = nullptr;
-        Message         message;
+        TOwnerId    ownerId;
+        Message     message;
+
+        OwnedMessage(TOwnerId ownerId, Message message)
+            : ownerId(ownerId)
+            , message(message)
+        {}
 
         friend std::ostream& operator<<(std::ostream& os, const OwnedMessage& ownedMessage)
         {
-            os << ownedMessage.message;
+            os << "[" << ownedMessage.ownerId << "]: " << ownedMessage.message;
 
             return os;
         }
