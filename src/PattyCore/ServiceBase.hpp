@@ -18,25 +18,36 @@ namespace PattyCore
         using SessionMap = std::unordered_map<Session::Id, Session::Pointer>;
 
     public:
-        ServiceBase(size_t nWorkers)
-            : _workers(nWorkers)
-            , _workGuard(asio::make_work_guard(_workers))
-            , _sessionsStrand(asio::make_strand(_workers))
-            , _tickRateTimer(_workers)
+        ServiceBase(size_t nIoPool,
+                    size_t nControlPool,
+                    size_t nHandlerPool,
+                    size_t nTimerPool)
+            : _ioPool(nIoPool)
+            , _controlPool(nControlPool)
+            , _handlerPool(nHandlerPool)
+            , _timerPool(nTimerPool)
+            , _sessionsStrand(asio::make_strand(_controlPool))
+            , _tickRateTimer(_timerPool)
             , _tickRate(0)
         {}
 
         virtual ~ServiceBase()
         {}
 
-        void StopWorkers()
+        void Stop()
         {
-            _workers.stop();
+            _ioPool.stop();
+            _controlPool.stop();
+            _handlerPool.stop();
+            _timerPool.stop();
         }
 
-        void JoinWorkers()
+        void Join()
         {
-            _workers.join();
+            _ioPool.join();
+            _controlPool.join();
+            _handlerPool.join();
+            _timerPool.join();
         }
 
     protected:
@@ -51,25 +62,12 @@ namespace PattyCore
             HandleReceivedMessagesAsync();
         }
 
-        void CreateSession(Tcp::socket&& socket)
+        void CreateSessionAsync(Tcp::socket&& socket)
         {
-            auto onSessionClosed = [this](const ErrorCode& error,
-                                          Session::Pointer pSession) mutable
-                                   {
-                                       OnSessionClosed(error, 
-                                                       std::move(pSession));
-                                   };
-
-            Session::Pointer pSession = Session::Create(_workers,
-                                                        std::move(socket),
-                                                        AssignId(),
-                                                        std::move(onSessionClosed),
-                                                        _receiveBuffer);
-
-            asio::post(_sessionsStrand,
-                       [this, pSession = std::move(pSession)]() mutable
+            asio::post(_controlPool,
+                       [this, socket = std::move(socket)]() mutable
                        {
-                           RegisterSession(std::move(pSession));
+                           CreateSession(std::move(socket));
                        });
         }
 
@@ -106,7 +104,8 @@ namespace PattyCore
 
         void HandleReceivedMessagesAsync()
         {
-            asio::post([this]()
+            asio::post(_controlPool,
+                       [this]()
                        {
                            HandleReceivedMessages();
                        });
@@ -118,7 +117,8 @@ namespace PattyCore
 
             while (_receiveBuffer.Pop(ownedMessage))
             {
-                asio::post([this, ownedMessage = std::move(ownedMessage)]() mutable
+                asio::post(_handlerPool,
+                           [this, ownedMessage = std::move(ownedMessage)]() mutable
                            {
                                HandleReceivedMessage(std::move(ownedMessage));
                            });
@@ -126,6 +126,28 @@ namespace PattyCore
 
             _tickRate.fetch_add(1);
             HandleReceivedMessagesAsync();
+        }
+
+        void CreateSession(Tcp::socket&& socket)
+        {
+            auto onSessionClosed = [this](const ErrorCode& error,
+                                          Session::Pointer pSession) mutable
+                                   {
+                                       OnSessionClosed(error,
+                                                       std::move(pSession));
+                                   };
+
+            Session::Pointer pSession = Session::Create(std::move(socket),
+                                                        AssignId(),
+                                                        std::move(onSessionClosed),
+                                                        asio::make_strand(_ioPool),
+                                                        _receiveBuffer);
+
+            asio::post(_sessionsStrand,
+                       [this, pSession = std::move(pSession)]() mutable
+                       {
+                           RegisterSession(std::move(pSession));
+                       });
         }
 
         void OnSessionClosed(const ErrorCode& error, Session::Pointer pSession)
@@ -136,7 +158,7 @@ namespace PattyCore
             }
 
             asio::post(_sessionsStrand,
-                       [this, 
+                       [this,
                         pSession = std::move(pSession)]() mutable
                        {
                            UnregisterSession(std::move(pSession));
@@ -150,7 +172,8 @@ namespace PattyCore
             assert(_sessions.count(id) == 0);
             _sessions[id] = std::move(pSession);
 
-            asio::post([this, 
+            asio::post(_handlerPool,
+                       [this, 
                         pSession = _sessions[id]]() mutable
                        {
                            OnSessionRegistered(std::move(pSession));
@@ -164,7 +187,8 @@ namespace PattyCore
             assert(_sessions.count(id) == 1);
             _sessions.erase(id);
 
-            asio::post([this, 
+            asio::post(_handlerPool,
+                       [this, 
                         pSession = std::move(pSession)]() mutable
                        {
                            OnSessionUnregistered(std::move(pSession));
@@ -190,13 +214,20 @@ namespace PattyCore
 
             WaitTickRateTimerAsync();
 
-            const TickRate tickRate = _tickRate.exchange(0);
-            OnTickRateMeasured(tickRate);
+            asio::post(_handlerPool,
+                       [this]()
+                       {
+                           const TickRate tickRate = _tickRate.exchange(0);
+                           OnTickRateMeasured(tickRate);
+                       });
         }
 
     protected:
-        ThreadPool                      _workers;
-        WorkGuard                       _workGuard;
+        ThreadPool                      _ioPool;
+        ThreadPool                      _controlPool;
+        ThreadPool                      _handlerPool;
+        ThreadPool                      _timerPool;
+
         SessionMap                      _sessions;
         Strand                          _sessionsStrand;
 

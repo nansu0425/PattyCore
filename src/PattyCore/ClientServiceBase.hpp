@@ -14,10 +14,16 @@ namespace PattyCore
         using SocketBuffer      = std::queue<Tcp::socket>;
 
     public:
-        ClientServiceBase(size_t nWorkers,
+        ClientServiceBase(size_t nIoPool,
+                          size_t nControlPool,
+                          size_t nHandlerPool,
+                          size_t nTimerPool,
                           uint16_t nConnects)
-            : ServiceBase(nWorkers)
-            , _resolver(_workers)
+            : ServiceBase(nIoPool,
+                          nControlPool,
+                          nHandlerPool,
+                          nTimerPool)
+            , _resolver(_ioPool)
         {
             InitConnectBuffer(nConnects);
         }
@@ -36,7 +42,7 @@ namespace PattyCore
 
             for (int i = 0; i < nConnects; ++i)
             {
-                _connectBuffer.emplace(_workers);
+                _connectBuffer.emplace(_ioPool);
             }
         }
 
@@ -47,11 +53,11 @@ namespace PattyCore
                                     [this](const ErrorCode& error,
                                            Endpoints endpoints)
                                     {
-                                        OnResolveCompleted(error, std::move(endpoints));
+                                        OnResolved(error, std::move(endpoints));
                                     });
         }
 
-        void OnResolveCompleted(const ErrorCode& error, Endpoints&& endpoints)
+        void OnResolved(const ErrorCode& error, Endpoints&& endpoints)
         {
             if (error)
             {
@@ -66,15 +72,15 @@ namespace PattyCore
         void ConnectAsync()
         {
             asio::async_connect(_connectBuffer.front(),
-                                       _endpoints,
-                                       [this](const ErrorCode& error,
-                                              const Tcp::endpoint& endpoint)
-                                       {
-                                           OnConnectCompleted(error);
-                                       });
+                                _endpoints,
+                                [this](const ErrorCode& error,
+                                       const Tcp::endpoint& endpoint)
+                                {
+                                    OnConnected(error);
+                                });
         }
 
-        void OnConnectCompleted(const ErrorCode& error)
+        void OnConnected(const ErrorCode& error)
         {
             if (error)
             {
@@ -82,7 +88,7 @@ namespace PattyCore
                 return;
             }
 
-            CreateSession(std::move(_connectBuffer.front()));
+            CreateSessionAsync(std::move(_connectBuffer.front()));
             _connectBuffer.pop();
 
             if (_connectBuffer.empty())

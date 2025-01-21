@@ -12,9 +12,16 @@ namespace Server
     class Service : public ServerServiceBase
     {
     public:
-        Service(size_t nWorkers,
+        Service(size_t nIoPool,
+                size_t nControlPool,
+                size_t nHandlerPool,
+                size_t nTimerPool,
                 uint16_t port)
-            : ServerServiceBase(nWorkers, port)
+            : ServerServiceBase(nIoPool,
+                                nControlPool,
+                                nHandlerPool,
+                                nTimerPool, 
+                                port)
         {}
 
     protected:

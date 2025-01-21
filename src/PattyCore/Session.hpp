@@ -23,16 +23,16 @@ namespace PattyCore
             std::cout << *this << " Session destroyed: " << GetEndpoint() << "\n";
         }
 
-        static Pointer Create(ThreadPool& workers,
-                              Tcp::socket&& socket,
+        static Pointer Create(Tcp::socket&& socket,
                               const Id id,
                               OnClosed onClosed,
+                              Strand&& writeStrand,
                               OwnedMessage::Buffer& receiveBuffer)
         {
-            Pointer pSelf = Pointer(new Session(workers,
-                                                std::move(socket),
+            Pointer pSelf = Pointer(new Session(std::move(socket),
                                                 id,
                                                 std::move(onClosed),
+                                                std::move(writeStrand),
                                                 receiveBuffer));
             pSelf->ReadMessageAsync(pSelf);
 
@@ -87,16 +87,16 @@ namespace PattyCore
         }
 
     private:
-        Session(ThreadPool& workers,
-                Tcp::socket&& socket,
+        Session(Tcp::socket&& socket,
                 const Id id,
                 OnClosed&& onClosed,
+                Strand&& writeStrand,
                 OwnedMessage::Buffer& receiveBuffer)
             : _socket(std::move(socket))
             , _id(id)
             , _endpoint(_socket.remote_endpoint())
             , _onClosed(std::move(onClosed))
-            , _writeStrand(asio::make_strand(workers))
+            , _writeStrand(std::move(writeStrand))
             , _isWriting(false)
             , _receiveBuffer(receiveBuffer)
         {

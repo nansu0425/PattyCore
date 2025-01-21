@@ -3,12 +3,21 @@
 
 int main()
 {
+    size_t nIoPool = 4;
+    size_t nControlPool = 2;
+    size_t nHandlerPool = 4;
+    size_t nTimerPool = 2;
+
     try
     {
-        Server::Service service(3, 60000);
+        Server::Service service(nIoPool,
+                                nControlPool,
+                                nHandlerPool,
+                                nTimerPool,
+                                60000);
         
         service.Start();
-        service.JoinWorkers();
+        service.Join();
     }
     catch (const std::exception& e)
     {
