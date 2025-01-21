@@ -5,7 +5,7 @@ int main()
 {
     try
     {
-        Server::Service service(6, 60000);
+        Server::Service service(3, 60000);
         
         service.Start();
         service.JoinWorkers();

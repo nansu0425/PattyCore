@@ -44,8 +44,7 @@ namespace Server
             Message message;
             message.header.id = static_cast<Message::Id>(MessageId::Ping);
 
-            SendMessageAsync(std::move(pSession),
-                             std::move(message));
+            pSession->SendAsync(pSession, std::move(message));
         }
 
     };

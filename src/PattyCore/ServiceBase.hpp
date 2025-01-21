@@ -48,7 +48,7 @@ namespace PattyCore
         void Run()
         {
             WaitTickRateTimerAsync();
-            FetchReceivedMessagesAsync();
+            HandleReceivedMessagesAsync();
         }
 
         void CreateSession(Tcp::socket&& socket)
@@ -63,24 +63,14 @@ namespace PattyCore
             Session::Pointer pSession = Session::Create(_workers,
                                                         std::move(socket),
                                                         AssignId(),
-                                                        std::move(onSessionClosed));
+                                                        std::move(onSessionClosed),
+                                                        _receiveBuffer);
 
             asio::post(_sessionsStrand,
                        [this, pSession = std::move(pSession)]() mutable
                        {
                            RegisterSession(std::move(pSession));
                        });
-        }
-
-        void SendMessageAsync(OwnedMessage&& ownedMessage)
-        {
-            _sendBuffer.Push(std::move(ownedMessage));
-        }
-
-        void SendMessageAsync(Session::Pointer pOwner, Message&& message)
-        {
-            _sendBuffer.Emplace(std::move(pOwner),
-                                std::move(message));
         }
 
         void BroadcastMessageAsync(Message&& message, Session::Pointer pIgnored = nullptr)
@@ -99,8 +89,7 @@ namespace PattyCore
                                    continue;
                                }
 
-                               OwnedMessage ownedMessage(pair.second, message);
-                               _sendBuffer.Push(std::move(ownedMessage));
+                               pair.second->SendAsync(pair.second, Message(message));
                            }
                        });
         }
@@ -113,25 +102,6 @@ namespace PattyCore
             ++id;
 
             return assignedId;
-        }
-
-        void FetchReceivedMessagesAsync()
-        {
-            asio::post(_sessionsStrand,
-                       [this]()
-                       {
-                           FetchReceivedMessages();
-                       });
-        }
-
-        void FetchReceivedMessages()
-        {
-            for (auto& pair : _sessions)
-            {
-                pair.second->Fetch(_receiveBuffer);
-            }
-
-            HandleReceivedMessagesAsync();
         }
 
         void HandleReceivedMessagesAsync()
@@ -148,43 +118,14 @@ namespace PattyCore
 
             while (_receiveBuffer.Pop(ownedMessage))
             {
-                HandleReceivedMessage(std::move(ownedMessage));
-            }
-
-            assert(!_receiveBuffer.Pop(ownedMessage));
-
-            DispatchSendMessagesAsync();
-        }
-
-        void DispatchSendMessagesAsync()
-        {
-            asio::post(_sessionsStrand,
-                       [this]()
-                       {
-                           DispatchSendMessages();
-                       });
-        }
-
-        void DispatchSendMessages()
-        {
-            std::queue<OwnedMessage> movedSendBuffer;
-            _sendBuffer >> movedSendBuffer;
-
-            while (!movedSendBuffer.empty())
-            {
-                OwnedMessage ownedMessage = std::move(movedSendBuffer.front());
-                movedSendBuffer.pop();
-
-                const Session::Id id = ownedMessage.pOwner->GetId();
-
-                if (_sessions.count(id) == 1)
-                {
-                    _sessions[id]->Dispatch(std::move(ownedMessage));
-                }
+                asio::post([this, ownedMessage = std::move(ownedMessage)]() mutable
+                           {
+                               HandleReceivedMessage(std::move(ownedMessage));
+                           });
             }
 
             _tickRate.fetch_add(1);
-            FetchReceivedMessagesAsync();
+            HandleReceivedMessagesAsync();
         }
 
         void OnSessionClosed(const ErrorCode& error, Session::Pointer pSession)
@@ -262,7 +203,6 @@ namespace PattyCore
         Timer                           _tickRateTimer;
         std::atomic<TickRate>           _tickRate;
 
-        OwnedMessage::Buffer            _sendBuffer;
         OwnedMessage::Buffer            _receiveBuffer;
 
     };

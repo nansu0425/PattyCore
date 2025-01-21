@@ -26,32 +26,29 @@ namespace PattyCore
         static Pointer Create(ThreadPool& workers,
                               Tcp::socket&& socket,
                               const Id id,
-                              OnClosed onClosed)
+                              OnClosed onClosed,
+                              OwnedMessage::Buffer& receiveBuffer)
         {
             Pointer pSelf = Pointer(new Session(workers,
                                                 std::move(socket),
                                                 id,
-                                                std::move(onClosed)));
+                                                std::move(onClosed),
+                                                receiveBuffer));
             pSelf->ReadMessageAsync(pSelf);
 
             return pSelf;
         }
 
-        void Dispatch(OwnedMessage&& ownedMessage)
+        void SendAsync(Pointer pSelf, Message&& message)
         {
-            assert(ownedMessage.pOwner.get() == this);
-            _writeBuffer.Push(std::move(ownedMessage.message));
+            assert(pSelf.get() == this);
+            _sendBuffer.Push(std::move(message));
 
             asio::post(_writeStrand,
-                       [pSelf = std::move(ownedMessage.pOwner)]() mutable
+                       [pSelf = std::move(pSelf)]() mutable
                        {
                            pSelf->WriteMessageAsync(std::move(pSelf));
                        });
-        }
-
-        void Fetch(OwnedMessage::Buffer& buffer)
-        {
-            buffer << _readBuffer;
         }
         
         void Close(Pointer pSelf)
@@ -81,11 +78,6 @@ namespace PattyCore
         {
             return _endpoint;
         }
-
-        void SetOnClosed(OnClosed onClosed)
-        {
-            _onClosed = std::move(onClosed);
-        }
         
         friend std::ostream& operator<<(std::ostream& os, const Session& session)
         {
@@ -98,13 +90,15 @@ namespace PattyCore
         Session(ThreadPool& workers,
                 Tcp::socket&& socket,
                 const Id id,
-                OnClosed&& onClosed)
+                OnClosed&& onClosed,
+                OwnedMessage::Buffer& receiveBuffer)
             : _socket(std::move(socket))
             , _id(id)
             , _endpoint(_socket.remote_endpoint())
             , _onClosed(std::move(onClosed))
             , _writeStrand(asio::make_strand(workers))
             , _isWriting(false)
+            , _receiveBuffer(receiveBuffer)
         {
             std::cout << *this << " Session created: " << GetEndpoint() << "\n";
         }
@@ -116,7 +110,7 @@ namespace PattyCore
                 return;
             }
 
-            if (!_writeBuffer.Pop(_writeMessage.message))
+            if (!_sendBuffer.Pop(_writeMessage.message))
             {
                 return;
             }
@@ -300,13 +294,12 @@ namespace PattyCore
             if (error)
             {
                 Close(std::move(pSelf));
-                _readBuffer.Clear();
 
                 return;
             }
 
-            _readBuffer.Emplace(shared_from_this(),
-                                std::move(_readMessage.message));
+            _receiveBuffer.Emplace(shared_from_this(),
+                                   std::move(_readMessage.message));
 
             ReadMessageAsync(std::move(pSelf));
         }
@@ -318,14 +311,14 @@ namespace PattyCore
         const Tcp::endpoint     _endpoint;
         OnClosed                _onClosed;
 
-        // Write
-        Message::Buffer         _writeBuffer;
+        // Send
+        Message::Buffer         _sendBuffer;
         OwnedMessage            _writeMessage;
         Strand                  _writeStrand;
         bool                    _isWriting;
 
-        // Read
-        OwnedMessage::Buffer    _readBuffer;
+        // Receive
+        OwnedMessage::Buffer&   _receiveBuffer;
         OwnedMessage            _readMessage;
 
     };
