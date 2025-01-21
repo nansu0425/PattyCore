@@ -5,9 +5,9 @@ int main()
 {
     try
     {
-        PattyCore::Client::Service service(4, 0, 1000);
-        service.Start("127.0.0.1", "60000");
+        Client::Service service(6, 1000);
         
+        service.Start("127.0.0.1", "60000");
         service.JoinWorkers();
     }
     catch (const std::exception& e)

@@ -11,15 +11,15 @@ namespace PattyCore
     class ServerServiceBase : public ServiceBase
     {
     public:
-        ServerServiceBase(size_t nWorkers, 
-                          size_t nMaxReceivedMessages,
+        ServerServiceBase(size_t nWorkers,
                           uint16_t port)
-            : ServiceBase(nWorkers, nMaxReceivedMessages)
+            : ServiceBase(nWorkers)
             , _acceptor(_workers, Tcp::endpoint(Tcp::v4(), port))
         {}
 
         void Start()
         {
+            Run();
             AcceptAsync();
             std::cout << "[SERVER] Started!\n";
         }

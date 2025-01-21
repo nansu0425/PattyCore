@@ -3,31 +3,30 @@
 #include <Server/MessageId.hpp>
 #include <Client/MessageId.hpp>
 
-namespace PattyCore::Server
+namespace Server
 {
     /*---------------*
      *    Service    *
      *---------------*/
 
-    class Service : public PattyCore::ServerServiceBase
+    class Service : public ServerServiceBase
     {
     public:
         Service(size_t nWorkers,
-                size_t nMaxReceivedMessages,
                 uint16_t port)
-            : ServerServiceBase(nWorkers, nMaxReceivedMessages, port)
+            : ServerServiceBase(nWorkers, port)
         {}
 
     protected:
-        virtual void HandleReceivedMessage(OwnedMessage receivedMessage) override
+        virtual void HandleReceivedMessage(OwnedMessage ownedMessage) override
         {
             Client::MessageId messageId = 
-                static_cast<Client::MessageId>(receivedMessage.message.header.id);
+                static_cast<Client::MessageId>(ownedMessage.message.header.id);
 
             switch (messageId)
             {
-            case Client::MessageId::Echo:
-                HandleEcho(std::move(receivedMessage.pOwner));
+            case Client::MessageId::Ping:
+                HandlePing(std::move(ownedMessage.pOwner));
                 break;
             default:
                 break;
@@ -40,12 +39,13 @@ namespace PattyCore::Server
         }
 
     private:
-        void HandleEcho(SessionPointer pSession)
+        void HandlePing(Session::Pointer pSession)
         {
             Message message;
-            message.header.id = static_cast<PattyCore::Message::Id>(MessageId::Echo);
+            message.header.id = static_cast<Message::Id>(MessageId::Ping);
 
-            SendMessageAsync(std::move(pSession), std::move(message));
+            SendMessageAsync(std::move(pSession),
+                             std::move(message));
         }
 
     };

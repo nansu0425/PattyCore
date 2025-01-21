@@ -7,10 +7,7 @@
     <ClInclude Include="Message.hpp" />
     <ClInclude Include="ServerServiceBase.hpp" />
     <ClInclude Include="ServiceBase.hpp" />
-    <ClInclude Include="Sender.hpp" />
     <ClInclude Include="Types.hpp" />
-    <ClInclude Include="Receiver.hpp" />
-    <ClInclude Include="SenderManager.hpp" />
-    <ClInclude Include="SessionManager.hpp" />
+    <ClInclude Include="LockBuffer.hpp" />
   </ItemGroup>
 </Project>

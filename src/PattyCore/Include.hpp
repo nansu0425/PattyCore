@@ -14,6 +14,8 @@
 #include <chrono>
 #include <cstdint>
 #include <cstddef>
+#include <type_traits>
+#include <shared_mutex>
 
 /*------------*
  *    Asio    *
@@ -32,3 +34,4 @@
  *-----------------*/
 
 #include <PattyCore/Types.hpp>
+#include <PattyCore/LockBuffer.hpp>

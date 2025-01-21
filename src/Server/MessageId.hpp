@@ -2,18 +2,14 @@
 
 #include <Server/Include.hpp>
 
-namespace PattyCore::Server
+namespace Server
 {
     /*-----------------*
      *    MessageId    *
      *-----------------*/
 
-    enum class MessageId : PattyCore::Message::Id
+    enum class MessageId : Message::Id
     {
-        Accept = 500,
-        Deny,
-        Echo,
-        Send,
-        Broadcast,
+        Ping = 500,
     };
 }

@@ -2,14 +2,14 @@
 
 #include <Client/Include.hpp>
 
-namespace PattyCore::Client
+namespace Client
 {
     /*-----------------*
      *    MessageId    *
      *-----------------*/
 
-    enum class MessageId : PattyCore::Message::Id
+    enum class MessageId : Message::Id
     {
-        Echo = 1000,
+        Ping = 1000,
     };
 }

@@ -3,84 +3,77 @@
 #include <Client/MessageId.hpp>
 #include <Server/MessageId.hpp>
 
-namespace PattyCore::Client
+namespace Client
 {
     /*---------------*
      *    Service    *
      *---------------*/
 
-    class Service : public PattyCore::ClientServiceBase
+    class Service : public ClientServiceBase
     {
     private:
         /*-----------------*
-         *    EchoTimer    *
+         *    PingTimer    *
          *-----------------*/
 
-        struct EchoTimer
+        struct PingTimer
         {
-            using Pointer   = std::unique_ptr<EchoTimer>;
-            using Map       = std::unordered_map<SessionId, Pointer>;
+            using Pointer   = std::unique_ptr<PingTimer>;
+            using Map       = std::unordered_map<Session::Id, Pointer>;
 
-            SessionId       id;
+            Session::Id     id;
             Timer           timer;
             TimePoint       start;
 
-            EchoTimer(SessionId id,
+            PingTimer(Session::Id id,
                       ThreadPool& workers)
                 : id(id)
                 , timer(workers)
             {}
 
-            ~EchoTimer()
+            ~PingTimer()
             {
-                std::cout << "[" << id << "] EchoTimer destroyed\n";
+                std::cout << "[" << id << "] PingTimer destroyed\n";
             }
         };
 
     public:
         Service(size_t nWorkers,
-                size_t nMaxReceivedMessages,
                 uint16_t nConnects)
             : ClientServiceBase(nWorkers,
-                                nMaxReceivedMessages,
                                 nConnects)
-            , _echoTimersStrand(asio::make_strand(_workers))
         {}
 
     protected:
-        virtual void OnSessionRegistered(SessionPointer pSession) override
+        virtual void OnSessionRegistered(Session::Pointer pSession) override
         {
-            asio::post(_echoTimersStrand,
-                       [this, pSession = std::move(pSession)]() mutable
-                       {
-                           const SessionId id = pSession->GetId();
+            {
+                UniqueSharedLock lock(_pingTimersLock);
 
-                           _echoTimers.emplace(id,
-                                               std::make_unique<EchoTimer>(id,
-                                                                           _workers));
-                           
-                           Echo(std::move(pSession));
-                       });
+                const Session::Id id = pSession->GetId();
+                _pingTimers.emplace(id,
+                                    std::make_unique<PingTimer>(id, _workers));
+            }
+
+            PingAsync(std::move(pSession));
         }
 
-        virtual void OnSessionUnregistered(SessionPointer pSession) override 
+        virtual void OnSessionUnregistered(Session::Pointer pSession) override
         {
-            asio::post(_echoTimersStrand,
-                       [this, id = pSession->GetId()]()
-                       {
-                           _echoTimers.erase(id);
-                       });
+            UniqueSharedLock lock(_pingTimersLock);
+
+            _pingTimers.erase(pSession->GetId());
         }
 
-        virtual void HandleReceivedMessage(OwnedMessage receivedMessage) override
+        virtual void HandleReceivedMessage(OwnedMessage ownedMessage) override
         {
             Server::MessageId messageId = 
-                static_cast<Server::MessageId>(receivedMessage.message.header.id);
+                static_cast<Server::MessageId>(ownedMessage.message.header.id);
 
             switch (messageId)
             {
-            case Server::MessageId::Echo:
-                HandleEchoAsync(std::move(receivedMessage.pOwner));
+            case Server::MessageId::Ping:
+                HandlePing(std::move(ownedMessage.pOwner));
                 break;
 
             default:
@@ -89,82 +82,69 @@ namespace PattyCore::Client
         }
 
     private:
-        void Echo(SessionPointer pSession)
+        void PingAsync(Session::Pointer pSession)
         {
-            const SessionId id = pSession->GetId();
+            const Session::Id id = pSession->GetId();
 
-            if (_echoTimers.count(id) == 0)
             {
-                std::cerr << pSession << " Echo error: non-existent EchoTimer\n";
-                return;
+                SharedLock lock(_pingTimersLock);
+
+                if (_pingTimers.count(id) == 0)
+                {
+                    std::cerr << *pSession << " Ping error: non-existent PingTimer\n";
+                    return;
+                }
+
+                _pingTimers[id]->start = std::chrono::steady_clock::now();
             }
 
-            _echoTimers[id]->start = std::chrono::steady_clock::now();
+            Message message;
+            message.header.id = static_cast<Message::Id>(MessageId::Ping);
 
-            PattyCore::Message message;
-            message.header.id = static_cast<PattyCore::Message::Id>(MessageId::Echo);
-
-            SendMessageAsync(std::move(pSession), std::move(message));
+            SendMessageAsync(std::move(pSession),
+                             std::move(message));
         }
 
-        void HandleEchoAsync(SessionPointer pSession)
+        void HandlePing(Session::Pointer pSession)
         {
+            const Session::Id id = pSession->GetId();
+
             TimePoint end = std::chrono::steady_clock::now();
-            const SessionId id = pSession->GetId();
+            auto elapsed = std::chrono::duration_cast<MicroSeconds>(end - _pingTimers[id]->start);
 
-            auto elapsed = std::chrono::duration_cast<MicroSeconds>(end - _echoTimers[id]->start);
+            std::cout << *pSession << " Ping: " << elapsed.count() << "us\n";
 
-            asio::post(_echoTimersStrand,
-                       [this, pSession = std::move(pSession)]() mutable
-                       {
-                           OnEchoCompleted(std::move(pSession));
-                       });
+            SharedLock lock(_pingTimersLock);
 
-            std::cout << "[" << id << "] Echo: " << elapsed.count() << "us \n";
-        }
-
-        void OnEchoCompleted(SessionPointer pSession)
-        {
-            const SessionId id = pSession->GetId();
-
-            if (_echoTimers.count(id) == 0)
+            if (_pingTimers.count(id) == 0)
             {
-                std::cerr << pSession << " OnEchoCompleted error: non-existent EchoTimer\n";
+                std::cerr << *pSession << " Ping error: non-existent PingTimer\n";
                 return;
             }
 
-            _echoTimers[id]->timer.expires_after(Seconds(1));
-            _echoTimers[id]->timer.async_wait([this, 
-                                              pSession = std::move(pSession)](const ErrorCode& error) mutable
+            _pingTimers[id]->timer.expires_after(Seconds(1));
+            _pingTimers[id]->timer.async_wait([this, pSession = std::move(pSession)]
+                                              (const ErrorCode& error) mutable
                                               {
-                                                  OnEchoTimerExpired(error, std::move(pSession));
+                                                  OnPingTimerExpired(error, 
+                                                                     std::move(pSession));
                                               });
         }
 
-        void OnEchoTimerExpired(const ErrorCode& error, SessionPointer pSession)
+        void OnPingTimerExpired(const ErrorCode& error, Session::Pointer pSession)
         {
             if (error)
             {
-                std::cerr << pSession << " EchoTimer error: " << error << "\n";
+                std::cerr << *pSession << " Failed to wait PingTimer: " << error << "\n";
                 return;
             }
 
-            EchoAsync(std::move(pSession));
-        }
-
-        void EchoAsync(SessionPointer pSession)
-        {
-            asio::post(_echoTimersStrand,
-                       [this,
-                       pSession = std::move(pSession)]() mutable
-                       {
-                           Echo(std::move(pSession));
-                       });
+            PingAsync(std::move(pSession));
         }
 
     private:
-        EchoTimer::Map      _echoTimers;
-        Strand              _echoTimersStrand;
+        PingTimer::Map      _pingTimers;
+        SharedMutex         _pingTimersLock;
     
     };
 }

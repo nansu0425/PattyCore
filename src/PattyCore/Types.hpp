@@ -16,6 +16,14 @@ namespace PattyCore
     using MicroSeconds      = std::chrono::microseconds;
     using NanoSeconds       = std::chrono::nanoseconds;
 
+    using Mutex             = std::mutex;
+    using LockGuard         = std::lock_guard<Mutex>;
+    using UniqueLock        = std::unique_lock<Mutex>;
+
+    using SharedMutex       = std::shared_mutex;
+    using UniqueSharedLock  = std::unique_lock<SharedMutex>;
+    using SharedLock        = std::shared_lock<SharedMutex>;
+
     /*------------*
      *    Asio    *
      *------------*/

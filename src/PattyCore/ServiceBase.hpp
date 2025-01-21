@@ -12,25 +12,19 @@ namespace PattyCore
     {
     protected:
         using TickRate              = uint32_t;
-        using SessionPointer        = Session::Pointer;
-        using SessionId             = Session::Id;
-        using SessionMap            = std::unordered_map<SessionId, SessionPointer>;
         using OwnedMessage          = Session::OwnedMessage;
-        using OwnedMessageBuffer    = Session::OwnedMessageBuffer;
+
+    private:
+        using SessionMap = std::unordered_map<Session::Id, Session::Pointer>;
 
     public:
-        ServiceBase(size_t nWorkers, size_t nMaxReceivedMessages)
+        ServiceBase(size_t nWorkers)
             : _workers(nWorkers)
             , _workGuard(asio::make_work_guard(_workers))
             , _sessionsStrand(asio::make_strand(_workers))
             , _tickRateTimer(_workers)
             , _tickRate(0)
-            , _receiveStrand(asio::make_strand(_workers))
-            , _nMaxReceivedMessages(nMaxReceivedMessages)
-        {
-            UpdateAsync();
-            WaitTickRateTimerAsync();
-        }
+        {}
 
         virtual ~ServiceBase()
         {}
@@ -46,99 +40,31 @@ namespace PattyCore
         }
 
     protected:
-        virtual SessionPointer OnSessionCreated(SessionPointer pSession, bool& isDenied) { return pSession; }
-        virtual void OnSessionRegistered(SessionPointer pSession) {}
-        virtual void OnSessionUnregistered(SessionPointer pSession) {}
-        virtual void HandleReceivedMessage(OwnedMessage receivedMessage) {}
-        virtual bool OnReceivedMessagesDispatched() { return true; }
+        virtual void OnSessionRegistered(Session::Pointer pSession) {}
+        virtual void OnSessionUnregistered(Session::Pointer pSession) {}
+        virtual void HandleReceivedMessage(OwnedMessage ownedMessage) {}
         virtual void OnTickRateMeasured(const TickRate tickRate) {}
+
+        void Run()
+        {
+            WaitTickRateTimerAsync();
+            FetchReceivedMessagesAsync();
+        }
 
         void CreateSession(Tcp::socket&& socket)
         {
-            auto onSessionClosed = [this](SessionPointer pSession)
+            auto onSessionClosed = [this](const ErrorCode& error,
+                                          Session::Pointer pSession) mutable
                                    {
-                                       asio::post(_sessionsStrand,
-                                                  [this, pSession = std::move(pSession)]() mutable
-                                                  {
-                                                      UnregisterSession(std::move(pSession));
-                                                  });
+                                       OnSessionClosed(error, 
+                                                       std::move(pSession));
                                    };
 
-            SessionPointer pSession = Session::Create(_workers,
-                                                      std::move(socket),
-                                                      AssignId(),
-                                                      std::move(onSessionClosed),
-                                                      _receiveBuffer,
-                                                      _receiveStrand);
-            std::cout << pSession << " Session created: " << pSession->GetEndpoint() << "\n";
+            Session::Pointer pSession = Session::Create(_workers,
+                                                        std::move(socket),
+                                                        AssignId(),
+                                                        std::move(onSessionClosed));
 
-            bool isDenied = false;
-            pSession = OnSessionCreated(std::move(pSession), isDenied);
-
-            if (isDenied)
-            {
-                std::cout << pSession << " Session denied: " << pSession->GetEndpoint() << "\n";
-                return;   
-            }
-
-            RegisterSessionAsync(std::move(pSession));
-        }
-
-        void DestroySessionAsync(SessionPointer pSession)
-        {
-            pSession->CloseAsync();
-        }
-
-        void DestroyAllSessionsAsync()
-        {
-            asio::post(_sessionsStrand,
-                       [this]()
-                       {
-                           for (auto& sessionPair : _sessions)
-                           {
-                               sessionPair.second->CloseAsync();
-                           }
-                       });
-        }
-
-        template<typename TMessage>
-        void SendMessageAsync(SessionPointer pSession, TMessage&& message)
-        {
-            assert(pSession != nullptr);
-
-            pSession->SendMessageAsync(std::forward<TMessage>(message));
-        }
-
-        template<typename TMessage>
-        void BroadcastMessageAsync(TMessage&& message, SessionPointer pIgnoredSession = nullptr)
-        {
-            asio::post(_sessionsStrand,
-                       [this, 
-                       message = std::forward<TMessage>(message), 
-                       pIgnoredSession = std::move(pIgnoredSession)]()
-                       {
-                           for (auto& sessionPair : _sessions)
-                           {
-                               if (sessionPair.second != pIgnoredSession)
-                               {
-                                   sessionPair.second->SendMessageAsync(message);
-                               }
-                           }
-                       });
-        }
-
-    private:
-        SessionId AssignId()
-        {
-            static SessionId id = 10000;
-            SessionId assignedId = id;
-            ++id;
-
-            return assignedId;
-        }
-
-        void RegisterSessionAsync(SessionPointer pSession)
-        {
             asio::post(_sessionsStrand,
                        [this, pSession = std::move(pSession)]() mutable
                        {
@@ -146,31 +72,52 @@ namespace PattyCore
                        });
         }
 
-        void RegisterSession(SessionPointer pSession)
+        void SendMessageAsync(OwnedMessage&& ownedMessage)
         {
-            const SessionId id = pSession->GetId();
-
-            _sessions[id] = std::move(pSession);
-            std::cout << _sessions[id] << " Session registered\n";
-
-            OnSessionRegistered(_sessions[id]);
-
-            _sessions[id]->ReceiveMessageAsync();
+            _sendBuffer.Push(std::move(ownedMessage));
         }
 
-        void UnregisterSession(SessionPointer pSession)
+        void SendMessageAsync(Session::Pointer pOwner, Message&& message)
         {
-            assert(_sessions.count(pSession->GetId()) == 1);
-
-            _sessions.erase(pSession->GetId());
-            std::cout << pSession << " Session unregistered\n";
-
-            OnSessionUnregistered(std::move(pSession));
+            _sendBuffer.Emplace(std::move(pOwner),
+                                std::move(message));
         }
 
-        void UpdateAsync()
+        void BroadcastMessageAsync(Message&& message, Session::Pointer pIgnored = nullptr)
         {
-            asio::post(_receiveStrand,
+            const Session::Id ignored = (pIgnored) ? pIgnored->GetId() : -1;
+
+            asio::post(_sessionsStrand,
+                       [this, 
+                        message = std::move(message),
+                        ignored]()
+                       {
+                           for (auto& pair : _sessions)
+                           {
+                               if (pair.first == ignored)
+                               {
+                                   continue;
+                               }
+
+                               OwnedMessage ownedMessage(pair.second, message);
+                               _sendBuffer.Push(std::move(ownedMessage));
+                           }
+                       });
+        }
+
+    private:
+        Session::Id AssignId()
+        {
+            static Session::Id id = 10000;
+            Session::Id assignedId = id;
+            ++id;
+
+            return assignedId;
+        }
+
+        void FetchReceivedMessagesAsync()
+        {
+            asio::post(_sessionsStrand,
                        [this]()
                        {
                            FetchReceivedMessages();
@@ -179,50 +126,108 @@ namespace PattyCore
 
         void FetchReceivedMessages()
         {
-            if (_nMaxReceivedMessages == 0)
+            for (auto& pair : _sessions)
             {
-                _receivedMessages = std::move(_receiveBuffer);
-            }
-            else
-            {
-                for (size_t messageCount = 0; messageCount < _nMaxReceivedMessages; ++messageCount)
-                {
-                    if (_receiveBuffer.empty())
-                    {
-                        break;
-                    }
-
-                    _receivedMessages.emplace(std::move(_receiveBuffer.front()));
-                    _receiveBuffer.pop();
-                }
+                pair.second->Fetch(_receiveBuffer);
             }
 
+            HandleReceivedMessagesAsync();
+        }
+
+        void HandleReceivedMessagesAsync()
+        {
             asio::post([this]()
                        {
-                            DispatchReceivedMessages();
+                           HandleReceivedMessages();
                        });
         }
 
-        void DispatchReceivedMessages()
+        void HandleReceivedMessages()
         {
-            while (!_receivedMessages.empty())
+            OwnedMessage ownedMessage;
+
+            while (_receiveBuffer.Pop(ownedMessage))
             {
-                HandleReceivedMessage(std::move(_receivedMessages.front()));
-                _receivedMessages.pop();
+                HandleReceivedMessage(std::move(ownedMessage));
             }
 
-            const bool shouldUpdate = OnReceivedMessagesDispatched();
-            OnUpdateCompleted(shouldUpdate);
+            assert(!_receiveBuffer.Pop(ownedMessage));
+
+            DispatchSendMessagesAsync();
         }
 
-        void OnUpdateCompleted(const bool shouldUpdate)
+        void DispatchSendMessagesAsync()
         {
-            _tickRate.fetch_add(1);
+            asio::post(_sessionsStrand,
+                       [this]()
+                       {
+                           DispatchSendMessages();
+                       });
+        }
 
-            if (shouldUpdate)
+        void DispatchSendMessages()
+        {
+            std::queue<OwnedMessage> movedSendBuffer;
+            _sendBuffer >> movedSendBuffer;
+
+            while (!movedSendBuffer.empty())
             {
-                UpdateAsync();
+                OwnedMessage ownedMessage = std::move(movedSendBuffer.front());
+                movedSendBuffer.pop();
+
+                const Session::Id id = ownedMessage.pOwner->GetId();
+
+                if (_sessions.count(id) == 1)
+                {
+                    _sessions[id]->Dispatch(std::move(ownedMessage));
+                }
             }
+
+            _tickRate.fetch_add(1);
+            FetchReceivedMessagesAsync();
+        }
+
+        void OnSessionClosed(const ErrorCode& error, Session::Pointer pSession)
+        {
+            if (error)
+            {
+                std::cerr << *pSession << " Failed to close session: " << error << "\n";
+            }
+
+            asio::post(_sessionsStrand,
+                       [this, 
+                        pSession = std::move(pSession)]() mutable
+                       {
+                           UnregisterSession(std::move(pSession));
+                       });
+        }
+
+        void RegisterSession(Session::Pointer pSession)
+        {
+            const Session::Id id = pSession->GetId();
+            
+            assert(_sessions.count(id) == 0);
+            _sessions[id] = std::move(pSession);
+
+            asio::post([this, 
+                        pSession = _sessions[id]]() mutable
+                       {
+                           OnSessionRegistered(std::move(pSession));
+                       });
+        }
+
+        void UnregisterSession(Session::Pointer pSession)
+        {
+            const Session::Id id = pSession->GetId();
+
+            assert(_sessions.count(id) == 1);
+            _sessions.erase(id);
+
+            asio::post([this, 
+                        pSession = std::move(pSession)]() mutable
+                       {
+                           OnSessionUnregistered(std::move(pSession));
+                       });
         }
 
         void WaitTickRateTimerAsync()
@@ -254,15 +259,11 @@ namespace PattyCore
         SessionMap                      _sessions;
         Strand                          _sessionsStrand;
 
-        // Update
         Timer                           _tickRateTimer;
         std::atomic<TickRate>           _tickRate;
 
-        // Receive
-        OwnedMessageBuffer              _receiveBuffer;
-        Strand                          _receiveStrand;
-        OwnedMessageBuffer              _receivedMessages;
-        const size_t                    _nMaxReceivedMessages;
+        OwnedMessage::Buffer            _sendBuffer;
+        OwnedMessage::Buffer            _receiveBuffer;
 
     };
 }

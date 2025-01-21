@@ -14,11 +14,9 @@ namespace PattyCore
         using SocketBuffer      = std::queue<Tcp::socket>;
 
     public:
-        ClientServiceBase(size_t nWorkers, 
-                          size_t nMaxReceivedMessages,
+        ClientServiceBase(size_t nWorkers,
                           uint16_t nConnects)
-            : ServiceBase(nWorkers, nMaxReceivedMessages)
-            , _connectStrand(asio::make_strand(_workers))
+            : ServiceBase(nWorkers)
             , _resolver(_workers)
         {
             InitConnectBuffer(nConnects);
@@ -26,6 +24,7 @@ namespace PattyCore
 
         void Start(const std::string& host, const std::string& service)
         {   
+            Run();
             ResolveAsync(host, service);
             std::cout << "[CLIENT] Started!\n";
         }
@@ -96,7 +95,6 @@ namespace PattyCore
 
     private:
         SocketBuffer        _connectBuffer;
-        Strand              _connectStrand;
         Tcp::resolver       _resolver;
         Endpoints           _endpoints;
 

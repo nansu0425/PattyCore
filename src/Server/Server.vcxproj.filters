@@ -9,31 +9,5 @@
     <ClInclude Include="MessageId.hpp" />
     <ClInclude Include="Service.hpp" />
     <ClInclude Include="Include.hpp" />
-    <ClInclude Include="..\PattyCore\Include.hpp">
-      <Filter>PattyCore</Filter>
-    </ClInclude>
-    <ClInclude Include="..\PattyCore\Message.hpp">
-      <Filter>PattyCore</Filter>
-    </ClInclude>
-    <ClInclude Include="..\PattyCore\ServerServiceBase.hpp">
-      <Filter>PattyCore</Filter>
-    </ClInclude>
-    <ClInclude Include="..\PattyCore\ServiceBase.hpp">
-      <Filter>PattyCore</Filter>
-    </ClInclude>
-    <ClInclude Include="..\PattyCore\Session.hpp">
-      <Filter>PattyCore</Filter>
-    </ClInclude>
-    <ClInclude Include="..\PattyCore\Types.hpp">
-      <Filter>PattyCore</Filter>
-    </ClInclude>
-    <ClInclude Include="..\PattyCore\MessageSender.hpp">
-      <Filter>PattyCore</Filter>
-    </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
-    <Filter Include="PattyCore">
-      <UniqueIdentifier>{9b4fe2ed-8fa8-4f0f-9491-faef5fd681e5}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
 </Project>

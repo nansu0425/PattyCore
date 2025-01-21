@@ -13,7 +13,7 @@ namespace PattyCore
         using Id            = uint32_t;
         using Size          = uint32_t;
         using Payload       = std::vector<std::byte>;
-        using Buffer        = std::queue<Message>;
+        using Buffer        = LockBuffer<Message>;
 
         /*--------------*
          *    Header    *
@@ -39,10 +39,10 @@ namespace PattyCore
         {
             static_assert(std::is_standard_layout<TData>::value, "Tdata must be standard-layout type");
 
-            const size_t offsetData = message.payload.size();
+            const size_t offset = message.payload.size();
 
-            message.payload.resize(offsetData + sizeof(TData));
-            std::memcpy(message.payload.data() + offsetData, &data, sizeof(TData));
+            message.payload.resize(offset + sizeof(TData));
+            std::memcpy(message.payload.data() + offset, &data, sizeof(TData));
 
             message.header.size = static_cast<Message::Size>(message.CalculateSize());
 
@@ -67,7 +67,7 @@ namespace PattyCore
 
         friend std::ostream& operator<<(std::ostream& os, const Message& message)
         {
-            os << "Id: " << message.header.id <<  ", Size: " << message.header.size << "B";
+            os << "id: " << message.header.id <<  ", size: " << message.header.size << "B";
 
             return os;
         }
@@ -77,22 +77,30 @@ namespace PattyCore
      *    OwnedMessage    *
      *--------------------*/
 
-    template<typename TOwnerId>
+    template<typename TOwner>
     struct OwnedMessage
     {
-        using Buffer        = std::queue<OwnedMessage>;
+        using Buffer        = LockBuffer<OwnedMessage>;
+        using OwnerPointer  = std::shared_ptr<TOwner>;
 
-        TOwnerId    ownerId;
-        Message     message;
+        OwnerPointer    pOwner;
+        Message         message;
 
-        OwnedMessage(TOwnerId ownerId, Message message)
-            : ownerId(ownerId)
+        OwnedMessage() = default;
+
+        OwnedMessage(OwnerPointer pOwner, Message&& message)
+            : pOwner(std::move(pOwner))
+            , message(std::move(message))
+        {}
+
+        OwnedMessage(OwnerPointer pOwner, const Message& message)
+            : pOwner(std::move(pOwner))
             , message(message)
         {}
 
         friend std::ostream& operator<<(std::ostream& os, const OwnedMessage& ownedMessage)
         {
-            os << "[" << ownedMessage.ownerId << "]: " << ownedMessage.message;
+            os << *ownedMessage.pOwner << " " << ownedMessage.message;
 
             return os;
         }
