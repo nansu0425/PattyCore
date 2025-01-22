@@ -6,6 +6,11 @@ int main()
 {
     try
     {
+        size_t nConnects = 0;
+
+        std::cout << "Enter the number of connects: ";
+        std::cin >> nConnects;
+
         Client::Service service(Client::Config::nIoHandlers,
                                 Client::Config::nControllers,
                                 Client::Config::nMessageHandlers,
@@ -13,7 +18,7 @@ int main()
         
         service.Start(Client::Config::host,
                       Client::Config::service,
-                      Client::Config::nConnects);
+                      nConnects);
         service.Join();
     }
     catch (const std::exception& e)
