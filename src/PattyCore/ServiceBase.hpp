@@ -87,7 +87,7 @@ namespace PattyCore
                                    continue;
                                }
 
-                               pair.second->SendAsync(pair.second, Message(message));
+                               pair.second->SendAsync(Message(message));
                            }
                        });
         }

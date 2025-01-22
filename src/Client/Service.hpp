@@ -107,7 +107,7 @@ namespace Client
             Message message;
             message.header.id = static_cast<Message::Id>(MessageId::Ping);
 
-            pSession->SendAsync(pSession, std::move(message));
+            pSession->SendAsync(std::move(message));
         }
 
         void HandlePing(Session::Pointer pSession)
