@@ -10,6 +10,13 @@ namespace PattyCore
     class LockBuffer
     {
     public:
+        LockBuffer() = default;
+
+        LockBuffer(const LockBuffer&) = delete;
+        LockBuffer(LockBuffer&&) = delete;
+        LockBuffer& operator=(const LockBuffer&) = delete;
+        LockBuffer& operator=(LockBuffer&&) = delete;
+
         void Push(TItem&& item)
         {
             LockGuard lock(_mutex);

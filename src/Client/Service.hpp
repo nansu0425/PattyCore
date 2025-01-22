@@ -74,7 +74,7 @@ namespace Client
                        });
         }
 
-        virtual void OnMessageFetched(OwnedMessage ownedMessage) override
+        virtual void OnMessageReceived(OwnedMessage ownedMessage) override
         {
             Server::MessageId messageId =
                 static_cast<Server::MessageId>(ownedMessage.message.header.id);
