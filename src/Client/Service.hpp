@@ -26,9 +26,9 @@ namespace Client
             TimePoint       start;
 
             PingTimer(Session::Id id,
-                      ThreadPool& timerPool)
+                      ThreadPool& timerWorkers)
                 : id(id)
-                , timer(timerPool)
+                , timer(timerWorkers)
             {}
 
             ~PingTimer()
@@ -41,14 +41,12 @@ namespace Client
         Service(size_t nIoPool,
                 size_t nControlPool,
                 size_t nHandlerPool,
-                size_t nTimerPool,
-                uint16_t nConnects)
+                size_t nTimerPool)
             : ClientServiceBase(nIoPool,
                                 nControlPool,
                                 nHandlerPool,
-                                nTimerPool,
-                                nConnects)
-            , _pingTimersStrand(asio::make_strand(_handlerPool))
+                                nTimerPool)
+            , _pingTimersStrand(asio::make_strand(_workers.control))
         {}
 
     protected:
@@ -59,7 +57,8 @@ namespace Client
                        {
                            const Session::Id id = pSession->GetId();
                            _pingTimers.emplace(id,
-                                               std::make_unique<PingTimer>(id, _timerPool));
+                                               std::make_unique<PingTimer>(id,
+                                                                           _workers.timer));
 
                            Ping(std::move(pSession));
                        });
@@ -117,13 +116,13 @@ namespace Client
             TimePoint end = std::chrono::steady_clock::now();
             auto elapsed = std::chrono::duration_cast<MicroSeconds>(end - _pingTimers[id]->start);
 
-            std::cout << *pSession << " Ping: " << elapsed.count() << "us\n";
-
             asio::post(_pingTimersStrand,
-                       [this, pSession = std::move(pSession)]() mutable
+                       [this, pSession]() mutable
                        {
                            WaitPingTimerAsync(std::move(pSession));
                        });
+
+            std::cout << *pSession << " Ping: " << elapsed.count() << "us\n";
         }
 
         void WaitPingTimerAsync(Session::Pointer pSession)

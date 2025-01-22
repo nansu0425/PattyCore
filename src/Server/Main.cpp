@@ -3,17 +3,17 @@
 
 int main()
 {
-    size_t nIoPool = 4;
-    size_t nControlPool = 2;
-    size_t nHandlerPool = 4;
-    size_t nTimerPool = 2;
+    size_t nIo = 4;
+    size_t nControl = 3;
+    size_t nHandler = 4;
+    size_t nTimer = 1;
 
     try
     {
-        Server::Service service(nIoPool,
-                                nControlPool,
-                                nHandlerPool,
-                                nTimerPool,
+        Server::Service service(nIo,
+                                nControl,
+                                nHandler,
+                                nTimer,
                                 60000);
         
         service.Start();

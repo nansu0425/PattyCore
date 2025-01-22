@@ -3,20 +3,19 @@
 
 int main() 
 {
-    size_t nIoPool = 4;
-    size_t nControlPool = 2;
-    size_t nHandlerPool = 4;
-    size_t nTimerPool = 2;
+    size_t nIo = 4;
+    size_t nControl = 2;
+    size_t nHandler = 4;
+    size_t nTimer = 2;
 
     try
     {
-        Client::Service service(nIoPool,
-                                nControlPool,
-                                nHandlerPool,
-                                nTimerPool,
-                                1000);
+        Client::Service service(nIo,
+                                nControl,
+                                nHandler,
+                                nTimer);
         
-        service.Start("127.0.0.1", "60000");
+        service.Start("127.0.0.1", "60000", 1000);
         service.Join();
     }
     catch (const std::exception& e)

@@ -20,12 +20,12 @@ namespace PattyCore
                           nControlPool,
                           nHandlerPool,
                           nTimerPool)
-            , _acceptor(_ioPool, Tcp::endpoint(Tcp::v4(), port))
+            , _acceptor(_workers.control, Tcp::endpoint(Tcp::v4(), port))
+            , _socket(_workers.io)
         {}
 
         void Start()
         {
-            Run();
             AcceptAsync();
             std::cout << "[SERVER] Started!\n";
         }
@@ -33,14 +33,14 @@ namespace PattyCore
     private:
         void AcceptAsync()
         {
-            _acceptor.async_accept([this](const ErrorCode& error,
-                                          Tcp::socket socket)
+            _acceptor.async_accept(_socket,
+                                   [this](const ErrorCode& error)
                                    {
-                                       OnAccepted(error, std::move(socket));
+                                       OnAccepted(error, std::move(_socket));
                                    });
         }
 
-        void OnAccepted(const ErrorCode& error, Tcp::socket&& socket)
+        void OnAccepted(const ErrorCode& error, Tcp::socket socket)
         {
             if (error)
             {
@@ -48,12 +48,15 @@ namespace PattyCore
                 return;
             }
 
+            _socket = Tcp::socket(_workers.io);
             AcceptAsync();
-            CreateSessionAsync(std::move(socket));
+
+            CreateSession(std::move(socket));
         }
 
     protected:
         Tcp::acceptor       _acceptor;
+        Tcp::socket         _socket;
 
     };
 }

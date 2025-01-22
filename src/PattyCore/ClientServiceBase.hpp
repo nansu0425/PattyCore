@@ -14,73 +14,57 @@ namespace PattyCore
         using SocketBuffer      = std::queue<Tcp::socket>;
 
     public:
-        ClientServiceBase(size_t nIoPool,
-                          size_t nControlPool,
-                          size_t nHandlerPool,
-                          size_t nTimerPool,
-                          uint16_t nConnects)
-            : ServiceBase(nIoPool,
-                          nControlPool,
-                          nHandlerPool,
-                          nTimerPool)
-            , _resolver(_ioPool)
+        ClientServiceBase(size_t nIo,
+                          size_t nControl,
+                          size_t nHandler,
+                          size_t nTimer)
+            : ServiceBase(nIo,
+                          nControl,
+                          nHandler,
+                          nTimer)
+            , _resolver(_workers.control)
+            , _socket(_workers.io)
+        {}
+
+        void Start(const std::string& host, const std::string& service, size_t nConnects)
         {
-            InitConnectBuffer(nConnects);
-        }
+            ErrorCode error;
 
-        void Start(const std::string& host, const std::string& service)
-        {   
-            Run();
-            ResolveAsync(host, service);
-            std::cout << "[CLIENT] Started!\n";
-        }
+            _endpoints = _resolver.resolve(host, service, error);
 
-    private:
-        void InitConnectBuffer(const uint16_t nConnects)
-        {
-            assert(nConnects > 0);
-
-            for (int i = 0; i < nConnects; ++i)
-            {
-                _connectBuffer.emplace(_ioPool);
-            }
-        }
-
-        void ResolveAsync(const std::string& host, const std::string& service)
-        {
-            _resolver.async_resolve(host,
-                                    service,
-                                    [this](const ErrorCode& error,
-                                           Endpoints endpoints)
-                                    {
-                                        OnResolved(error, std::move(endpoints));
-                                    });
-        }
-
-        void OnResolved(const ErrorCode& error, Endpoints&& endpoints)
-        {
             if (error)
             {
                 std::cerr << "[CLIENT] Failed to resolve: " << error << "\n";
                 return;
             }
 
-            _endpoints = std::move(endpoints);
-            ConnectAsync();
+            ConnectAsync(nConnects);
+            std::cout << "[CLIENT] Started!\n";
         }
 
-        void ConnectAsync()
+    private:
+        void ConnectAsync(size_t nConnects)
         {
-            asio::async_connect(_connectBuffer.front(),
+            if (nConnects == 0)
+            {
+                return;
+            }
+
+            asio::async_connect(_socket,
                                 _endpoints,
-                                [this](const ErrorCode& error,
-                                       const Tcp::endpoint& endpoint)
-                                {
-                                    OnConnected(error);
-                                });
+                                asio::bind_executor(_workers.control,
+                                                    [this, nConnects]
+                                                    (const ErrorCode& error,
+                                                     const Tcp::endpoint& endpoint)
+                                                    {
+                                                        OnConnected(error,
+                                                                    std::move(_socket),
+                                                                    nConnects);
+                                                    })
+                                );
         }
 
-        void OnConnected(const ErrorCode& error)
+        void OnConnected(const ErrorCode& error, Tcp::socket socket, size_t nConnects)
         {
             if (error)
             {
@@ -88,21 +72,16 @@ namespace PattyCore
                 return;
             }
 
-            CreateSessionAsync(std::move(_connectBuffer.front()));
-            _connectBuffer.pop();
+            _socket = Tcp::socket(_workers.io);
+            ConnectAsync(--nConnects);
 
-            if (_connectBuffer.empty())
-            {
-                return;
-            }
-
-            ConnectAsync();
+            CreateSession(std::move(socket));
         }
 
     private:
-        SocketBuffer        _connectBuffer;
         Tcp::resolver       _resolver;
         Endpoints           _endpoints;
+        Tcp::socket         _socket;
 
     };
 }
