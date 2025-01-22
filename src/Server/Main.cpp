@@ -1,20 +1,16 @@
 ﻿#include <Server/Pch.hpp>
 #include <Server/Service.hpp>
+#include <Server/Config.hpp>
 
 int main()
 {
-    size_t nIo = 4;
-    size_t nControl = 3;
-    size_t nHandler = 4;
-    size_t nTimer = 1;
-
     try
     {
-        Server::Service service(nIo,
-                                nControl,
-                                nHandler,
-                                nTimer,
-                                60000);
+        Server::Service service(Server::Config::nIoHandlers,
+                                Server::Config::nControllers,
+                                Server::Config::nMessageHandlers,
+                                Server::Config::nTimers,
+                                Server::Config::port);
         
         service.Start();
         service.Join();

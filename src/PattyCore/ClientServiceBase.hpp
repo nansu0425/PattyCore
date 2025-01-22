@@ -10,20 +10,17 @@ namespace PattyCore
 
     class ClientServiceBase : public ServiceBase
     {
-    protected:
-        using SocketBuffer      = std::queue<Tcp::socket>;
-
     public:
-        ClientServiceBase(size_t nIo,
-                          size_t nControl,
-                          size_t nHandler,
-                          size_t nTimer)
-            : ServiceBase(nIo,
-                          nControl,
-                          nHandler,
-                          nTimer)
-            , _resolver(_workers.control)
-            , _socket(_workers.io)
+        ClientServiceBase(size_t nIoHandlers,
+                          size_t nControllers,
+                          size_t nMessageHandlers,
+                          size_t nTimers)
+            : ServiceBase(nIoHandlers,
+                          nControllers,
+                          nMessageHandlers,
+                          nTimers)
+            , _resolver(_workers.controllers)
+            , _socket(_workers.ioHandlers)
         {}
 
         void Start(const std::string& host, const std::string& service, size_t nConnects)
@@ -52,7 +49,7 @@ namespace PattyCore
 
             asio::async_connect(_socket,
                                 _endpoints,
-                                asio::bind_executor(_workers.control,
+                                asio::bind_executor(_workers.controllers,
                                                     [this, nConnects]
                                                     (const ErrorCode& error,
                                                      const Tcp::endpoint& endpoint)
@@ -72,7 +69,7 @@ namespace PattyCore
                 return;
             }
 
-            _socket = Tcp::socket(_workers.io);
+            _socket = Tcp::socket(_workers.ioHandlers);
             ConnectAsync(--nConnects);
 
             CreateSession(std::move(socket));

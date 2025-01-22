@@ -9,5 +9,6 @@
     <ClInclude Include="Service.hpp" />
     <ClInclude Include="MessageId.hpp" />
     <ClInclude Include="Include.hpp" />
+    <ClInclude Include="Config.hpp" />
   </ItemGroup>
 </Project>

@@ -46,7 +46,7 @@ namespace Client
                                 nControlPool,
                                 nHandlerPool,
                                 nTimerPool)
-            , _pingTimersStrand(asio::make_strand(_workers.control))
+            , _pingTimersStrand(asio::make_strand(_workers.controllers))
         {}
 
     protected:
@@ -58,7 +58,7 @@ namespace Client
                            const Session::Id id = pSession->GetId();
                            _pingTimers.emplace(id,
                                                std::make_unique<PingTimer>(id,
-                                                                           _workers.timer));
+                                                                           _workers.timers));
 
                            Ping(std::move(pSession));
                        });
@@ -74,7 +74,7 @@ namespace Client
                        });
         }
 
-        virtual void HandleReceivedMessage(OwnedMessage ownedMessage) override
+        virtual void OnMessageFetched(OwnedMessage ownedMessage) override
         {
             Server::MessageId messageId =
                 static_cast<Server::MessageId>(ownedMessage.message.header.id);

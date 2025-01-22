@@ -25,7 +25,7 @@ namespace Server
         {}
 
     protected:
-        virtual void HandleReceivedMessage(OwnedMessage ownedMessage) override
+        virtual void OnMessageFetched(OwnedMessage ownedMessage) override
         {
             Client::MessageId messageId = 
                 static_cast<Client::MessageId>(ownedMessage.message.header.id);
@@ -40,9 +40,9 @@ namespace Server
             }
         }
 
-        virtual void OnTickRateMeasured(const TickRate tickRate) override
+        virtual void OnMessageLoopMeasured(const uint64_t messageLoopCount) override
         {
-            std::cout << "[SERVER] Tick rate: " << tickRate << "hz\n";
+            std::cout << "[SERVER] Message loop: " << messageLoopCount << " hz\n";
         }
 
     private:

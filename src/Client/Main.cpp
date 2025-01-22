@@ -1,21 +1,19 @@
 ﻿#include <Client/Pch.hpp>
 #include <Client/Service.hpp>
+#include <Client/Config.hpp>
 
 int main() 
 {
-    size_t nIo = 4;
-    size_t nControl = 2;
-    size_t nHandler = 4;
-    size_t nTimer = 2;
-
     try
     {
-        Client::Service service(nIo,
-                                nControl,
-                                nHandler,
-                                nTimer);
+        Client::Service service(Client::Config::nIoHandlers,
+                                Client::Config::nControllers,
+                                Client::Config::nMessageHandlers,
+                                Client::Config::nTimers);
         
-        service.Start("127.0.0.1", "60000", 1000);
+        service.Start(Client::Config::host,
+                      Client::Config::service,
+                      Client::Config::nConnects);
         service.Join();
     }
     catch (const std::exception& e)
