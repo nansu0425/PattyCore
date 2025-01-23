@@ -17,6 +17,7 @@ namespace PattyCore
         using Pointer           = std::shared_ptr<Session>;
         using OwnedMessage      = OwnedMessage<Session>;
         using OnClosed          = std::function<void(const ErrorCode&, Pointer)>;
+        using OnReceived        = std::function<void(OwnedMessage&&)>;
 
         ~Session()
         {
@@ -27,13 +28,13 @@ namespace PattyCore
                               const Id id,
                               OnClosed onClosed,
                               Strand&& writeStrand,
-                              OwnedMessage::Buffer& receiveBuffer)
+                              OnReceived onReceived)
         {
             Pointer pSelf = Pointer(new Session(std::move(socket),
                                                 id,
                                                 std::move(onClosed),
                                                 std::move(writeStrand),
-                                                receiveBuffer));
+                                                std::move(onReceived)));
             pSelf->ReadMessageAsync(pSelf);
 
             return pSelf;
@@ -90,14 +91,14 @@ namespace PattyCore
                 const Id id,
                 OnClosed&& onClosed,
                 Strand&& writeStrand,
-                OwnedMessage::Buffer& receiveBuffer)
+                OnReceived&& onReceived)
             : _socket(std::move(socket))
             , _id(id)
             , _endpoint(_socket.remote_endpoint())
             , _onClosed(std::move(onClosed))
             , _writeStrand(std::move(writeStrand))
             , _isWriting(false)
-            , _receiveBuffer(receiveBuffer)
+            , _onReceived(std::move(onReceived))
         {
             std::cout << *this << " Session created: " << GetEndpoint() << "\n";
         }
@@ -295,8 +296,8 @@ namespace PattyCore
                 return;
             }
 
-            _receiveBuffer.Emplace(pSelf,
-                                   std::move(_readMessage.message));
+            _readMessage.pOwner = pSelf;
+            _onReceived(std::move(_readMessage));
 
             ReadMessageAsync(std::move(pSelf));
         }
@@ -315,8 +316,8 @@ namespace PattyCore
         bool                    _isWriting;
 
         // Receive
-        OwnedMessage::Buffer&   _receiveBuffer;
         OwnedMessage            _readMessage;
+        OnReceived              _onReceived;
 
     };
 }

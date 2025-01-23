@@ -68,8 +68,8 @@ namespace PattyCore
                        nMessageHandlers, 
                        nTimers)
             , _sessionsStrand(asio::make_strand(_workers.controllers))
-            , _receiveTimer(_workers.timers)
-            , _receiveLoop(0)
+            , _dispatchTimer(_workers.timers)
+            , _dispatchCount(0)
         {
             Run(nMessageHandlers);
         }
@@ -91,7 +91,7 @@ namespace PattyCore
         virtual void OnSessionRegistered(Session::Pointer pSession) {}
         virtual void OnSessionUnregistered(Session::Pointer pSession) {}
         virtual void OnMessageReceived(OwnedMessage ownedMessage) {}
-        virtual void OnReceiveLoopMeasured(const uint64_t receiveLoop) {}
+        virtual void OnDispatchCountMeasured(const uint64_t dispatchCount) {}
 
         void CreateSession(Tcp::socket&& socket)
         {
@@ -102,11 +102,16 @@ namespace PattyCore
                                                        std::move(pSession));
                                    };
 
+            auto onMessageReceived = [this](OwnedMessage&& ownedMessage)
+                                     {
+                                         DispatchReceivedMessage(std::move(ownedMessage));
+                                     };
+
             Session::Pointer pSession = Session::Create(std::move(socket),
                                                         AssignId(),
                                                         std::move(onSessionClosed),
                                                         asio::make_strand(_workers.ioHandlers),
-                                                        *_receiveBuffers[AssignReceiveBufferIdx()]);
+                                                        std::move(onMessageReceived));
 
             asio::post(_sessionsStrand,
                        [this, pSession = std::move(pSession)]() mutable
@@ -145,57 +150,19 @@ namespace PattyCore
             return assignedId;
         }
 
-        size_t AssignReceiveBufferIdx() const
-        {
-            static std::atomic<size_t> idx = 0;
-
-            while (true)
-            {
-                size_t curIdx = idx.load();
-                const size_t nextIdx = (curIdx + 1) % _receiveBuffers.size();
-
-                if (idx.compare_exchange_weak(curIdx, nextIdx))
-                {
-                    return nextIdx;
-                }
-            }
-        }
-
         void Run(size_t nMessageHandlers)
         {
-            WaitReceiveTimerAsync();
-            ReceiveMessagesAsync(nMessageHandlers);
+            WaitDispatchTimerAsync();
         }
 
-        void ReceiveMessagesAsync(size_t nMessageHandlers)
+        void DispatchReceivedMessage(OwnedMessage&& ownedMessage)
         {
-            _receiveBuffers.reserve(nMessageHandlers);
-
-            for (size_t iReceiveBuffer = 0; iReceiveBuffer < nMessageHandlers; ++iReceiveBuffer)
-            {
-                _receiveBuffers.emplace_back(std::make_unique<OwnedMessage::Buffer>());
-
-                asio::post(_workers.messageHandlers,
-                           [this, iReceiveBuffer]()
-                           {
-                               ReceiveMessages(iReceiveBuffer);
-                           });
-            }
-        }
-
-        void ReceiveMessages(size_t iReceiveBuffer)
-        {
-            while (true)
-            {
-                OwnedMessage ownedMessage;
-
-                if (_receiveBuffers[iReceiveBuffer]->Pop(ownedMessage))
-                {
-                    OnMessageReceived(std::move(ownedMessage));
-                }
-
-                _receiveLoop.fetch_add(1);
-            }
+            asio::post(_workers.messageHandlers,
+                       [this, ownedMessage = std::move(ownedMessage)]() mutable
+                       {
+                           OnMessageReceived(ownedMessage);
+                           _dispatchCount.fetch_add(1);
+                       });
         }
 
         void OnSessionClosed(const ErrorCode& error, Session::Pointer pSession)
@@ -243,16 +210,16 @@ namespace PattyCore
                        });
         }
 
-        void WaitReceiveTimerAsync()
+        void WaitDispatchTimerAsync()
         {
-            _receiveTimer.expires_after(Seconds(1));
-            _receiveTimer.async_wait([this](const ErrorCode& error)
+            _dispatchTimer.expires_after(Seconds(1));
+            _dispatchTimer.async_wait([this](const ErrorCode& error)
                                          {
-                                             OnReceiveTimerExpired(error);
+                                             OnDispatchTimerExpired(error);
                                          });
         }
 
-        void OnReceiveTimerExpired(const ErrorCode& error)
+        void OnDispatchTimerExpired(const ErrorCode& error)
         {
             if (error)
             {
@@ -260,10 +227,10 @@ namespace PattyCore
                 return;
             }
 
-            WaitReceiveTimerAsync();
+            WaitDispatchTimerAsync();
 
-            const uint64_t messageLoopCount = _receiveLoop.exchange(0);
-            OnReceiveLoopMeasured(messageLoopCount);
+            const uint64_t dispatchCount = _dispatchCount.exchange(0);
+            OnDispatchCountMeasured(dispatchCount);
         }
 
     protected:
@@ -272,9 +239,8 @@ namespace PattyCore
         SessionMap                  _sessions;
         Strand                      _sessionsStrand;
 
-        ReceiveBufferVec            _receiveBuffers;
-        Timer                       _receiveTimer;
-        std::atomic<uint64_t>       _receiveLoop;
+        Timer                       _dispatchTimer;
+        std::atomic<uint64_t>       _dispatchCount;
 
     };
 }

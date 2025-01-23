@@ -40,9 +40,9 @@ namespace Server
             }
         }
 
-        virtual void OnReceiveLoopMeasured(const uint64_t receiveLoop) override
+        virtual void OnDispatchCountMeasured(const uint64_t dispatchCount) override
         {
-            std::cout << "[SERVER] Receive loop: " << receiveLoop << " hz\n";
+            std::cout << "[SERVER] Dispatch count: " << dispatchCount << " hz\n";
         }
 
     private:
