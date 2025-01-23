@@ -34,7 +34,7 @@ namespace PattyCore
                                                 std::move(onClosed),
                                                 std::move(writeStrand),
                                                 receiveBuffer));
-            pSelf->ReadMessageAsync();
+            pSelf->ReadMessageAsync(pSelf);
 
             return pSelf;
         }
@@ -209,11 +209,10 @@ namespace PattyCore
                        });
         }
 
-        void ReadMessageAsync()
+        void ReadMessageAsync(Pointer pSelf)
         {
             assert(_readMessage.pOwner == nullptr);
-
-            _readMessage.pOwner = shared_from_this();
+            _readMessage.pOwner = std::move(pSelf);
 
             ReadHeaderAsync();
         }
@@ -296,10 +295,10 @@ namespace PattyCore
                 return;
             }
 
-            _receiveBuffer.Emplace(std::move(pSelf),
+            _receiveBuffer.Emplace(pSelf,
                                    std::move(_readMessage.message));
 
-            ReadMessageAsync();
+            ReadMessageAsync(std::move(pSelf));
         }
 
     private:
