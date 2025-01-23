@@ -14,6 +14,7 @@ namespace PattyCore
         using Size          = uint32_t;
         using Payload       = std::vector<std::byte>;
         using Buffer        = LockBuffer<Message>;
+        using Pointer       = std::unique_ptr<Message>;
 
         /*--------------*
          *    Header    *

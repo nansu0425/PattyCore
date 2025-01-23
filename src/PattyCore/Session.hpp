@@ -35,23 +35,23 @@ namespace PattyCore
                                                 std::move(onClosed),
                                                 std::move(writeStrand),
                                                 std::move(onReceived)));
-            pSelf->ReadMessageAsync(pSelf);
+            pSelf->ReceiveAsync(pSelf);
 
             return pSelf;
         }
 
         void SendAsync(Message&& message)
         {
-            _sendBuffer.Push(std::move(message));
+            Message::Pointer pMessage = std::make_unique<Message>(std::move(message));
 
             asio::post(_writeStrand,
-                       [pSelf = shared_from_this()]() mutable
+                       [pSelf = shared_from_this(), pMessage = std::move(pMessage)]() mutable
                        {
-                           pSelf->WriteMessageAsync(std::move(pSelf));
+                           pSelf->WriteHeaderAsync(std::move(pMessage));
                        });
         }
         
-        void Close(Pointer pSelf)
+        void Close()
         {
             ErrorCode error;
 
@@ -66,7 +66,7 @@ namespace PattyCore
                 _socket.close(error);
             }
 
-            _onClosed(error, std::move(pSelf));
+            _onClosed(error, shared_from_this());
         }
 
         Id GetId() const noexcept
@@ -97,49 +97,27 @@ namespace PattyCore
             , _endpoint(_socket.remote_endpoint())
             , _onClosed(std::move(onClosed))
             , _writeStrand(std::move(writeStrand))
-            , _isWriting(false)
             , _onReceived(std::move(onReceived))
         {
             std::cout << *this << " Session created: " << GetEndpoint() << "\n";
         }
 
-        void WriteMessageAsync(Pointer pSelf)
-        {
-            if (_isWriting)
-            {
-                return;
-            }
-
-            if (!_sendBuffer.Pop(_writeMessage.message))
-            {
-                return;
-            }
-
-            assert(_writeMessage.pOwner == nullptr);
-
-            _writeMessage.pOwner = std::move(pSelf);
-            WriteHeaderAsync();
-
-            _isWriting = true;
-        }
-
-        void WriteHeaderAsync()
+        void WriteHeaderAsync(Message::Pointer pMessage)
         {
             SharedLock lock(_sharedMutex);
+            Message::Header& header = pMessage->header;
 
             asio::async_write(_socket,
-                              asio::buffer(&_writeMessage.message.header,
-                                           sizeof(Message::Header)),
-                              [this]
-                              (const ErrorCode& error,
-                               const size_t nBytesTransferred)
-                              {
-                                  OnHeaderWritten(error,
-                                                  nBytesTransferred);
-                              });
+                              asio::buffer(&header, sizeof(Message::Header)),
+                              asio::bind_executor(_writeStrand,
+                                                  [pSelf = shared_from_this(), pMessage = std::move(pMessage)]
+                                                  (const ErrorCode& error, const size_t nBytesTransferred) mutable
+                                                  {
+                                                      pSelf->OnHeaderWritten(error, nBytesTransferred, std::move(pMessage));
+                                                  }));
         }
 
-        void OnHeaderWritten(const ErrorCode& error, const size_t nBytesTransferred)
+        void OnHeaderWritten(const ErrorCode& error, const size_t nBytesTransferred, Message::Pointer pMessage)
         {
             if (error)
             {
@@ -150,9 +128,9 @@ namespace PattyCore
                 assert(sizeof(Message::Header) == nBytesTransferred);
 
                 // The size of payload is bigger than 0
-                if (_writeMessage.message.header.size > sizeof(Message::Header))
+                if (pMessage->header.size > sizeof(Message::Header))
                 {
-                    WritePayloadAsync();
+                    WritePayloadAsync(std::move(pMessage));
 
                     return;
                 }
@@ -161,22 +139,21 @@ namespace PattyCore
             OnMessageWritten(error);
         }
 
-        void WritePayloadAsync() 
+        void WritePayloadAsync(Message::Pointer pMessage)
         {
             SharedLock lock(_sharedMutex);
+            Message::Payload& payload = pMessage->payload;
 
             asio::async_write(_socket,
-                              asio::buffer(_writeMessage.message.payload),
-                              [this]
-                              (const ErrorCode& error,
-                               const size_t nBytesTransferred)
+                              asio::buffer(payload),
+                              [pSelf = shared_from_this(), pMessage = std::move(pMessage)]
+                              (const ErrorCode& error, const size_t nBytesTransferred) mutable
                               {
-                                  OnPayloadWritten(error,
-                                                   nBytesTransferred);
+                                  pSelf->OnPayloadWritten(error, nBytesTransferred, std::move(pMessage));
                               });
         }
 
-        void OnPayloadWritten(const ErrorCode& error, const size_t nBytesTransferred)
+        void OnPayloadWritten(const ErrorCode& error, const size_t nBytesTransferred, Message::Pointer pMessage)
         {
             if (error)
             {
@@ -184,7 +161,7 @@ namespace PattyCore
             }
             else
             {
-                assert(nBytesTransferred == _writeMessage.message.payload.size());
+                assert(nBytesTransferred == pMessage->payload.size());
             }
 
             OnMessageWritten(error);
@@ -192,25 +169,13 @@ namespace PattyCore
 
         void OnMessageWritten(const ErrorCode& error)
         {
-            Pointer pSelf = std::move(_writeMessage.pOwner);
-            assert(pSelf != nullptr);
-
             if (error)
             {
-                Close(std::move(pSelf));
-
-                return;
+                Close();
             }
-
-            asio::post(_writeStrand,
-                       [pSelf = std::move(pSelf)]() mutable
-                       {
-                           pSelf->_isWriting = false;
-                           pSelf->WriteMessageAsync(std::move(pSelf));
-                       });
         }
 
-        void ReadMessageAsync(Pointer pSelf)
+        void ReceiveAsync(Pointer pSelf)
         {
             assert(_readMessage.pOwner == nullptr);
             _readMessage.pOwner = std::move(pSelf);
@@ -223,13 +188,10 @@ namespace PattyCore
             SharedLock lock(_sharedMutex);
 
             asio::async_read(_socket,
-                             asio::buffer(&_readMessage.message.header,
-                                          sizeof(Message::Header)),
-                             [this](const ErrorCode& error,
-                                    const size_t nBytesTransferred)
+                             asio::buffer(&_readMessage.message.header, sizeof(Message::Header)),
+                             [this](const ErrorCode& error, const size_t nBytesTransferred)
                              {
-                                 OnHeaderRead(error, 
-                                              nBytesTransferred);
+                                 OnHeaderRead(error, nBytesTransferred);
                              });
         }
 
@@ -263,11 +225,9 @@ namespace PattyCore
 
             asio::async_read(_socket,
                              asio::buffer(_readMessage.message.payload),
-                             [this](const ErrorCode& error,
-                                    const size_t nBytesTransferred)
+                             [this](const ErrorCode& error, const size_t nBytesTransferred)
                              {
-                                 OnPayloadRead(error,
-                                               nBytesTransferred);
+                                 OnPayloadRead(error, nBytesTransferred);
                              });
         }
 
@@ -291,7 +251,7 @@ namespace PattyCore
 
             if (error)
             {
-                Close(std::move(pSelf));
+                Close();
 
                 return;
             }
@@ -299,7 +259,7 @@ namespace PattyCore
             _readMessage.pOwner = pSelf;
             _onReceived(std::move(_readMessage));
 
-            ReadMessageAsync(std::move(pSelf));
+            ReceiveAsync(std::move(pSelf));
         }
 
     private:
@@ -309,13 +269,8 @@ namespace PattyCore
         const Tcp::endpoint     _endpoint;
         OnClosed                _onClosed;
 
-        // Send
-        Message::Buffer         _sendBuffer;
-        OwnedMessage            _writeMessage;
         Strand                  _writeStrand;
-        bool                    _isWriting;
 
-        // Receive
         OwnedMessage            _readMessage;
         OnReceived              _onReceived;
 

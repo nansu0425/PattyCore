@@ -160,7 +160,7 @@ namespace PattyCore
             asio::post(_workers.messageHandlers,
                        [this, ownedMessage = std::move(ownedMessage)]() mutable
                        {
-                           OnMessageReceived(ownedMessage);
+                           OnMessageReceived(std::move(ownedMessage));
                            _dispatchCount.fetch_add(1);
                        });
         }
