@@ -11,7 +11,7 @@ namespace PattyCore
     class ServerServiceBase : public ServiceBase
     {
     public:
-        ServerServiceBase(const ThreadsInfo& threadsInfo,
+        ServerServiceBase(const Threads::Info& threadsInfo,
                           uint16_t port)
             : ServiceBase(threadsInfo)
             , _acceptor(_threads.SessionPool(), Tcp::endpoint(Tcp::v4(), port))

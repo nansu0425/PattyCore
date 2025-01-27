@@ -8,7 +8,7 @@ int main()
 {
     try
     {
-        const ServiceBase::ThreadsInfo threadsInfo =
+        const ServiceBase::Threads::Info threadsInfo =
         {
             Config::nSocketThreads,
             Config::nSessionThreads,

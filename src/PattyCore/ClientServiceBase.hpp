@@ -11,7 +11,7 @@ namespace PattyCore
     class ClientServiceBase : public ServiceBase
     {
     public:
-        ClientServiceBase(const ThreadsInfo& threadsInfo)
+        ClientServiceBase(const Threads::Info& threadsInfo)
             : ServiceBase(threadsInfo)
             , _resolver(_threads.SessionPool())
             , _socket(_threads.SocketPool())

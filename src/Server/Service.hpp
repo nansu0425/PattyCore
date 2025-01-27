@@ -12,7 +12,7 @@ namespace Server
     class Service : public ServerServiceBase
     {
     public:
-        Service(const ThreadsInfo& threadsInfo, uint16_t port)
+        Service(const Threads::Info& threadsInfo, uint16_t port)
             : ServerServiceBase(threadsInfo, port)
             , _secondTimer(_threads.TaskPool())
         {

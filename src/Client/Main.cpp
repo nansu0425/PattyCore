@@ -13,7 +13,7 @@ int main()
         std::cout << "Enter the number of connects: ";
         std::cin >> nConnects;
 
-        const ServiceBase::ThreadsInfo threadsInfo =
+        const ServiceBase::Threads::Info threadsInfo =
         {
             Config::nSocketThreads,
             Config::nSessionThreads,

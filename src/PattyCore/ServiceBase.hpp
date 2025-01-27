@@ -11,25 +11,27 @@ namespace PattyCore
     class ServiceBase
     {
     public:
-        struct ThreadsInfo
-        {
-            uint8_t      nSocketThreads;
-            uint8_t      nSessionThreads;
-            uint8_t      nMessageThreads;
-            uint8_t      nTaskThreads;
-        };
-
-    protected:
-        using OwnedMessage      = Session::OwnedMessage;
+        /*---------------*
+         *    Threads    *
+         *---------------*/
 
         class Threads
         {
         public:
-            Threads(const ThreadsInfo& threadsInfo)
-                : _socketPool(threadsInfo.nSocketThreads)
-                , _sessionPool(threadsInfo.nSessionThreads)
-                , _messagePool(threadsInfo.nMessageThreads)
-                , _taskPool(threadsInfo.nTaskThreads)
+            struct Info
+            {
+                uint8_t     nSocketThreads;
+                uint8_t     nSessionThreads;
+                uint8_t     nMessageThreads;
+                uint8_t     nTaskThreads;
+            };
+
+        public:
+            Threads(const Info& info)
+                : _socketPool(info.nSocketThreads)
+                , _sessionPool(info.nSessionThreads)
+                , _messagePool(info.nMessageThreads)
+                , _taskPool(info.nTaskThreads)
                 , _socketGuard(asio::make_work_guard(_socketPool))
                 , _sessionGuard(asio::make_work_guard(_sessionPool))
                 , _messageGuard(asio::make_work_guard(_messagePool))
@@ -52,10 +54,10 @@ namespace PattyCore
                 _taskPool.join();
             }
 
-            ThreadPool&     SocketPool() { return _socketPool; }
-            ThreadPool&     SessionPool() { return _sessionPool; }
-            ThreadPool&     MessagePool() { return _messagePool; }
-            ThreadPool&     TaskPool() { return _taskPool; }
+            ThreadPool& SocketPool() { return _socketPool; }
+            ThreadPool& SessionPool() { return _sessionPool; }
+            ThreadPool& MessagePool() { return _messagePool; }
+            ThreadPool& TaskPool() { return _taskPool; }
 
         private:
             ThreadPool      _socketPool;    // 소켓 입출력 스레드
@@ -69,8 +71,11 @@ namespace PattyCore
             WorkGuard       _taskGuard;
         };
 
+    protected:
+        using OwnedMessage      = Session::OwnedMessage;
+
     public:
-        ServiceBase(const ThreadsInfo& threadsInfo)
+        ServiceBase(const Threads::Info& threadsInfo)
             : _threads(threadsInfo)
             , _sessionStrand(asio::make_strand(_threads.SessionPool()))
         {}

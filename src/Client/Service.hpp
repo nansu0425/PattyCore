@@ -38,7 +38,7 @@ namespace Client
         };
 
     public:
-        Service(const ThreadsInfo& threadsInfo)
+        Service(const Threads::Info& threadsInfo)
             : ClientServiceBase(threadsInfo)
             , _pingTimerStrand(asio::make_strand(_threads.TaskPool()))
         {}
@@ -106,6 +106,8 @@ namespace Client
             const Session::Id id = pSession->GetId();
 
             TimePoint end = std::chrono::steady_clock::now();
+
+            // pingTimerMap에 접근할 때 다른 스레드에 의해 pingTimerMap 상태가 바뀌면 read access 버그 발생 가능
             auto elapsed = std::chrono::duration_cast<MicroSeconds>(end - _pingTimerMap[id]->start);
 
             asio::post(_pingTimerStrand,
