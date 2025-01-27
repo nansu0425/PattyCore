@@ -10,96 +10,94 @@ namespace PattyCore
 
     class ServiceBase
     {
-    protected:
-        using OwnedMessage          = Session::OwnedMessage;
-        using SessionMap            = std::unordered_map<Session::Id, Session::Pointer>;
-        using ReceiveBufferVec      = std::vector<std::unique_ptr<OwnedMessage::Buffer>>;
-
-        struct Workers
+    public:
+        struct ThreadsInfo
         {
-            ThreadPool      ioHandlers;
-            ThreadPool      controllers;
-            ThreadPool      messageHandlers;
-            ThreadPool      timers;
+            uint8_t      nSocketThreads;
+            uint8_t      nSessionThreads;
+            uint8_t      nMessageThreads;
+            uint8_t      nTaskThreads;
+        };
 
-            WorkGuard       ioHandlersGuard;
-            WorkGuard       controllersGuard;
-            WorkGuard       messageHandlersGuard;
-            WorkGuard       timersGuard;
+    protected:
+        using OwnedMessage      = Session::OwnedMessage;
 
-            Workers(size_t nIoHandlers,
-                    size_t nControllers,
-                    size_t nMessageHandlers,
-                    size_t nTimers)
-                : ioHandlers(nIoHandlers)
-                , controllers(nControllers)
-                , messageHandlers(nMessageHandlers)
-                , timers(nTimers)
-                , ioHandlersGuard(asio::make_work_guard(ioHandlers))
-                , controllersGuard(asio::make_work_guard(controllers))
-                , messageHandlersGuard(asio::make_work_guard(messageHandlers))
-                , timersGuard(asio::make_work_guard(timers))
+        class Threads
+        {
+        public:
+            Threads(const ThreadsInfo& threadsInfo)
+                : _socketPool(threadsInfo.nSocketThreads)
+                , _sessionPool(threadsInfo.nSessionThreads)
+                , _messagePool(threadsInfo.nMessageThreads)
+                , _taskPool(threadsInfo.nTaskThreads)
+                , _socketGuard(asio::make_work_guard(_socketPool))
+                , _sessionGuard(asio::make_work_guard(_sessionPool))
+                , _messageGuard(asio::make_work_guard(_messagePool))
+                , _taskGuard(asio::make_work_guard(_taskPool))
             {}
 
             void Stop()
             {
-                ioHandlers.stop();
-                controllers.stop();
-                messageHandlers.stop();
-                timers.stop();
+                _socketPool.stop();
+                _sessionPool.stop();
+                _messagePool.stop();
+                _taskPool.stop();
             }
 
             void Join()
             {
-                ioHandlers.join();
-                controllers.join();
-                messageHandlers.join();
-                timers.join();
+                _socketPool.join();
+                _sessionPool.join();
+                _messagePool.join();
+                _taskPool.join();
             }
+
+            ThreadPool&     SocketPool() { return _socketPool; }
+            ThreadPool&     SessionPool() { return _sessionPool; }
+            ThreadPool&     MessagePool() { return _messagePool; }
+            ThreadPool&     TaskPool() { return _taskPool; }
+
+        private:
+            ThreadPool      _socketPool;    // 소켓 입출력 스레드
+            ThreadPool      _sessionPool;   // 세션 관리 스레드
+            ThreadPool      _messagePool;   // 메시지 처리 스레드
+            ThreadPool      _taskPool;      // 범용 비동기 작업 스레드
+
+            WorkGuard       _socketGuard;
+            WorkGuard       _sessionGuard;
+            WorkGuard       _messageGuard;
+            WorkGuard       _taskGuard;
         };
 
     public:
-        ServiceBase(size_t nIoHandlers,
-                    size_t nControllers,
-                    size_t nMessageHandlers,
-                    size_t nTimers)
-            : _workers(nIoHandlers, 
-                       nControllers, 
-                       nMessageHandlers, 
-                       nTimers)
-            , _sessionsStrand(asio::make_strand(_workers.controllers))
-            , _dispatchTimer(_workers.timers)
-            , _dispatchCount(0)
-        {
-            Run(nMessageHandlers);
-        }
+        ServiceBase(const ThreadsInfo& threadsInfo)
+            : _threads(threadsInfo)
+            , _sessionStrand(asio::make_strand(_threads.SessionPool()))
+        {}
 
         virtual ~ServiceBase()
         {}
 
         void Stop()
         {
-            _workers.Stop();
+            _threads.Stop();
         }
 
         void Join()
         {
-            _workers.Join();
+            _threads.Join();
         }
 
     protected:
         virtual void OnSessionRegistered(Session::Pointer pSession) {}
         virtual void OnSessionUnregistered(Session::Pointer pSession) {}
         virtual void OnMessageReceived(OwnedMessage ownedMessage) {}
-        virtual void OnDispatchCountMeasured(const uint64_t dispatchCount) {}
 
         void CreateSession(Tcp::socket&& socket)
         {
-            auto onSessionClosed = [this](const ErrorCode& error,
-                                          Session::Pointer pSession) mutable
+            auto onSessionClosed = [this](const ErrorCode& error, Session::Pointer pSession)
                                    {
-                                       OnSessionClosed(error,
-                                                       std::move(pSession));
+                                       OnSessionClosed(error, std::move(pSession));
                                    };
 
             auto onMessageReceived = [this](OwnedMessage&& ownedMessage)
@@ -110,26 +108,20 @@ namespace PattyCore
             Session::Pointer pSession = Session::Create(std::move(socket),
                                                         AssignId(),
                                                         std::move(onSessionClosed),
-                                                        asio::make_strand(_workers.ioHandlers),
+                                                        asio::make_strand(_threads.SocketPool()),
                                                         std::move(onMessageReceived));
 
-            asio::post(_sessionsStrand,
-                       [this, pSession = std::move(pSession)]() mutable
-                       {
-                           RegisterSession(std::move(pSession));
-                       });
+            OnSessionCreated(std::move(pSession));
         }
 
         void BroadcastMessageAsync(Message&& message, Session::Pointer pIgnored = nullptr)
         {
             const Session::Id ignored = (pIgnored) ? pIgnored->GetId() : -1;
 
-            asio::post(_sessionsStrand,
-                       [this, 
-                        message = std::move(message),
-                        ignored]()
+            asio::post(_sessionStrand,
+                       [this, message = std::move(message), ignored]()
                        {
-                           for (auto& pair : _sessions)
+                           for (auto& pair : _sessionMap)
                            {
                                if (pair.first == ignored)
                                {
@@ -150,18 +142,35 @@ namespace PattyCore
             return assignedId;
         }
 
-        void Run(size_t nMessageHandlers)
-        {
-            WaitDispatchTimerAsync();
-        }
-
         void DispatchReceivedMessage(OwnedMessage&& ownedMessage)
         {
-            asio::post(_workers.messageHandlers,
+            asio::post(_threads.MessagePool(),
                        [this, ownedMessage = std::move(ownedMessage)]() mutable
                        {
                            OnMessageReceived(std::move(ownedMessage));
-                           _dispatchCount.fetch_add(1);
+                       });
+        }
+
+        void OnSessionCreated(Session::Pointer pSession)
+        {
+            asio::post(_sessionStrand,
+                       [this, pSession = std::move(pSession)]() mutable
+                       {
+                           RegisterSession(std::move(pSession));
+                       });
+        }
+
+        void RegisterSession(Session::Pointer pSession)
+        {
+            const Session::Id id = pSession->GetId();
+
+            assert(_sessionMap.count(id) == 0);
+            _sessionMap[id] = std::move(pSession);
+
+            asio::post(_threads.SessionPool(),
+                       [this, pSession = _sessionMap[id]]() mutable
+                       {
+                           OnSessionRegistered(std::move(pSession));
                        });
         }
 
@@ -172,26 +181,10 @@ namespace PattyCore
                 std::cerr << *pSession << " Failed to close session: " << error << "\n";
             }
 
-            asio::post(_sessionsStrand,
-                       [this,
-                        pSession = std::move(pSession)]() mutable
+            asio::post(_sessionStrand,
+                       [this, pSession = std::move(pSession)]() mutable
                        {
                            UnregisterSession(std::move(pSession));
-                       });
-        }
-
-        void RegisterSession(Session::Pointer pSession)
-        {
-            const Session::Id id = pSession->GetId();
-            
-            assert(_sessions.count(id) == 0);
-            _sessions[id] = std::move(pSession);
-
-            asio::post(_workers.controllers,
-                       [this, 
-                        pSession = _sessions[id]]() mutable
-                       {
-                           OnSessionRegistered(std::move(pSession));
                        });
         }
 
@@ -199,48 +192,21 @@ namespace PattyCore
         {
             const Session::Id id = pSession->GetId();
 
-            assert(_sessions.count(id) == 1);
-            _sessions.erase(id);
+            assert(_sessionMap.count(id) == 1);
+            _sessionMap.erase(id);
 
-            asio::post(_workers.controllers,
-                       [this, 
-                        pSession = std::move(pSession)]() mutable
+            asio::post(_threads.SessionPool(),
+                       [this, pSession = std::move(pSession)]() mutable
                        {
                            OnSessionUnregistered(std::move(pSession));
                        });
         }
 
-        void WaitDispatchTimerAsync()
-        {
-            _dispatchTimer.expires_after(Seconds(1));
-            _dispatchTimer.async_wait([this](const ErrorCode& error)
-                                         {
-                                             OnDispatchTimerExpired(error);
-                                         });
-        }
-
-        void OnDispatchTimerExpired(const ErrorCode& error)
-        {
-            if (error)
-            {
-                std::cerr << "[MESSAGE_LOOP] Failed to wait: " << error << "\n";
-                return;
-            }
-
-            WaitDispatchTimerAsync();
-
-            const uint64_t dispatchCount = _dispatchCount.exchange(0);
-            OnDispatchCountMeasured(dispatchCount);
-        }
-
     protected:
-        Workers                     _workers;
+        Threads             _threads;
 
-        SessionMap                  _sessions;
-        Strand                      _sessionsStrand;
-
-        Timer                       _dispatchTimer;
-        std::atomic<uint64_t>       _dispatchCount;
+        Session::Map        _sessionMap;
+        Strand              _sessionStrand;
 
     };
 }

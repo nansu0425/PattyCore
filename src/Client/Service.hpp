@@ -38,27 +38,19 @@ namespace Client
         };
 
     public:
-        Service(size_t nIoPool,
-                size_t nControlPool,
-                size_t nHandlerPool,
-                size_t nTimerPool)
-            : ClientServiceBase(nIoPool,
-                                nControlPool,
-                                nHandlerPool,
-                                nTimerPool)
-            , _pingTimersStrand(asio::make_strand(_workers.controllers))
+        Service(const ThreadsInfo& threadsInfo)
+            : ClientServiceBase(threadsInfo)
+            , _pingTimerStrand(asio::make_strand(_threads.TaskPool()))
         {}
 
     protected:
         virtual void OnSessionRegistered(Session::Pointer pSession) override
         {
-            asio::post(_pingTimersStrand,
+            asio::post(_pingTimerStrand,
                        [this, pSession = std::move(pSession)]()
                        {
                            const Session::Id id = pSession->GetId();
-                           _pingTimers.emplace(id,
-                                               std::make_unique<PingTimer>(id,
-                                                                           _workers.timers));
+                           _pingTimerMap.emplace(id, std::make_unique<PingTimer>(id, _threads.TaskPool()));
 
                            Ping(std::move(pSession));
                        });
@@ -67,10 +59,10 @@ namespace Client
 
         virtual void OnSessionUnregistered(Session::Pointer pSession) override
         {
-            asio::post(_pingTimersStrand,
+            asio::post(_pingTimerStrand,
                        [this, pSession = std::move(pSession)]()
                        {
-                           _pingTimers.erase(pSession->GetId());
+                           _pingTimerMap.erase(pSession->GetId());
                        });
         }
 
@@ -95,13 +87,13 @@ namespace Client
         {
             const Session::Id id = pSession->GetId();
 
-            if (_pingTimers.count(id) == 0)
+            if (_pingTimerMap.count(id) == 0)
             {
                 std::cerr << *pSession << " Ping error: non-existent PingTimer\n";
                 return;
             }
 
-            _pingTimers[id]->start = std::chrono::steady_clock::now();
+            _pingTimerMap[id]->start = std::chrono::steady_clock::now();
 
             Message message;
             message.header.id = static_cast<Message::Id>(MessageId::Ping);
@@ -114,9 +106,9 @@ namespace Client
             const Session::Id id = pSession->GetId();
 
             TimePoint end = std::chrono::steady_clock::now();
-            auto elapsed = std::chrono::duration_cast<MicroSeconds>(end - _pingTimers[id]->start);
+            auto elapsed = std::chrono::duration_cast<MicroSeconds>(end - _pingTimerMap[id]->start);
 
-            asio::post(_pingTimersStrand,
+            asio::post(_pingTimerStrand,
                        [this, pSession]() mutable
                        {
                            WaitPingTimerAsync(std::move(pSession));
@@ -129,14 +121,14 @@ namespace Client
         {
             const Session::Id id = pSession->GetId();
 
-            if (_pingTimers.count(id) == 0)
+            if (_pingTimerMap.count(id) == 0)
             {
                 std::cerr << *pSession << " Ping error: non-existent PingTimer\n";
                 return;
             }
 
-            _pingTimers[id]->timer.expires_after(Seconds(1));
-            _pingTimers[id]->timer.async_wait([this, pSession = std::move(pSession)]
+            _pingTimerMap[id]->timer.expires_after(Seconds(1));
+            _pingTimerMap[id]->timer.async_wait([this, pSession = std::move(pSession)]
                                               (const ErrorCode& error) mutable
                                               {
                                                   OnPingTimerExpired(error,
@@ -158,7 +150,7 @@ namespace Client
 
         void PingAsync(Session::Pointer pSession)
         {
-            asio::post(_pingTimersStrand,
+            asio::post(_pingTimerStrand,
                       [this, pSession = std::move(pSession)]()
                       {
                            Ping(std::move(pSession));
@@ -166,8 +158,8 @@ namespace Client
         }
 
     private:
-        PingTimer::Map      _pingTimers;
-        Strand              _pingTimersStrand;
-    
+        PingTimer::Map      _pingTimerMap;
+        Strand              _pingTimerStrand;
+
     };
 }

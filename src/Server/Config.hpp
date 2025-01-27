@@ -2,10 +2,10 @@
 
 namespace Server::Config
 {
-    constexpr size_t nIoHandlers = 4;
-    constexpr size_t nControllers = 1;
-    constexpr size_t nMessageHandlers = 4;
-    constexpr size_t nTimers = 1;
+    constexpr uint8_t nSocketThreads = 4;
+    constexpr uint8_t nSessionThreads = 3;
+    constexpr uint8_t nMessageThreads = 4;
+    constexpr uint8_t nTaskThreads = 1;
 
-    constexpr size_t port = 60000;
+    constexpr uint16_t port = 60000;
 }

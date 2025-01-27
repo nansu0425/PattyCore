@@ -15,6 +15,7 @@ namespace PattyCore
     public:
         using Id                = uint32_t;
         using Pointer           = std::shared_ptr<Session>;
+        using Map               = std::unordered_map<Id, Pointer>;
         using OwnedMessage      = OwnedMessage<Session>;
         using OnClosed          = std::function<void(const ErrorCode&, Pointer)>;
         using OnReceived        = std::function<void(OwnedMessage&&)>;

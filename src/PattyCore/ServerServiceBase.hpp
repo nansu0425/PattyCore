@@ -11,17 +11,11 @@ namespace PattyCore
     class ServerServiceBase : public ServiceBase
     {
     public:
-        ServerServiceBase(size_t nIoHandlers,
-                          size_t nControllers,
-                          size_t nMessageHandlers,
-                          size_t nTimers,
+        ServerServiceBase(const ThreadsInfo& threadsInfo,
                           uint16_t port)
-            : ServiceBase(nIoHandlers,
-                          nControllers,
-                          nMessageHandlers,
-                          nTimers)
-            , _acceptor(_workers.controllers, Tcp::endpoint(Tcp::v4(), port))
-            , _socket(_workers.ioHandlers)
+            : ServiceBase(threadsInfo)
+            , _acceptor(_threads.SessionPool(), Tcp::endpoint(Tcp::v4(), port))
+            , _socket(_threads.SocketPool())
         {}
 
         void Start()
@@ -48,7 +42,7 @@ namespace PattyCore
                 return;
             }
 
-            _socket = Tcp::socket(_workers.ioHandlers);
+            _socket = Tcp::socket(_threads.SocketPool());
             AcceptAsync();
 
             CreateSession(std::move(socket));

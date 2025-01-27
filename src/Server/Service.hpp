@@ -12,17 +12,12 @@ namespace Server
     class Service : public ServerServiceBase
     {
     public:
-        Service(size_t nIoPool,
-                size_t nControlPool,
-                size_t nHandlerPool,
-                size_t nTimerPool,
-                uint16_t port)
-            : ServerServiceBase(nIoPool,
-                                nControlPool,
-                                nHandlerPool,
-                                nTimerPool, 
-                                port)
-        {}
+        Service(const ThreadsInfo& threadsInfo, uint16_t port)
+            : ServerServiceBase(threadsInfo, port)
+            , _secondTimer(_threads.TaskPool())
+        {
+            WaitSecondAsync();
+        }
 
     protected:
         virtual void OnMessageReceived(OwnedMessage ownedMessage) override
@@ -38,11 +33,8 @@ namespace Server
             default:
                 break;
             }
-        }
 
-        virtual void OnDispatchCountMeasured(const uint64_t dispatchCount) override
-        {
-            std::cout << "[SERVER] Dispatch count: " << dispatchCount << " hz\n";
+            _nMessagesHandled.fetch_add(1);
         }
 
     private:
@@ -53,6 +45,33 @@ namespace Server
 
             pSession->SendAsync(std::move(message));
         }
+
+        void WaitSecondAsync()
+        {
+            _secondTimer.expires_after(Seconds(1));
+            _secondTimer.async_wait([this](const ErrorCode& error)
+                                    {
+                                        OnSecondElapsed(error);
+                                    });
+        }
+
+        void OnSecondElapsed(const ErrorCode& error)
+        {
+            if (error)
+            {
+                std::cerr << "[SERVER] Failed to wait a second: " << error << "\n";
+                return;
+            }
+
+            const uint32_t nMessagesHandled = _nMessagesHandled.exchange(0);
+            WaitSecondAsync();
+
+            std::cout << "[SERVER] The number of messages handled per second: " << nMessagesHandled << "\n";
+        }
+
+    private:
+        Timer                   _secondTimer;
+        std::atomic<uint32_t>   _nMessagesHandled = 0;
 
     };
 }

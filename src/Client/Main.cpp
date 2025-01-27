@@ -2,6 +2,8 @@
 #include <Client/Service.hpp>
 #include <Client/Config.hpp>
 
+using namespace Client;
+
 int main() 
 {
     try
@@ -11,14 +13,17 @@ int main()
         std::cout << "Enter the number of connects: ";
         std::cin >> nConnects;
 
-        Client::Service service(Client::Config::nIoHandlers,
-                                Client::Config::nControllers,
-                                Client::Config::nMessageHandlers,
-                                Client::Config::nTimers);
+        const ServiceBase::ThreadsInfo threadsInfo =
+        {
+            Config::nSocketThreads,
+            Config::nSessionThreads,
+            Config::nMessageThreads,
+            Config::nTaskThreads,
+        };
+
+        Service service(threadsInfo);
         
-        service.Start(Client::Config::host,
-                      Client::Config::service,
-                      nConnects);
+        service.Start(Config::host, Config::service, nConnects);
         service.Join();
     }
     catch (const std::exception& e)

@@ -12,7 +12,7 @@ namespace PattyCore
 
     using TimePoint         = std::chrono::steady_clock::time_point;
     using Seconds           = std::chrono::seconds;
-    using Milliseconds      = std::chrono::milliseconds;
+    using MilliSeconds      = std::chrono::milliseconds;
     using MicroSeconds      = std::chrono::microseconds;
     using NanoSeconds       = std::chrono::nanoseconds;
 

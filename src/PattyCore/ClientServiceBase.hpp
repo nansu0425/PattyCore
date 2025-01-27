@@ -11,16 +11,10 @@ namespace PattyCore
     class ClientServiceBase : public ServiceBase
     {
     public:
-        ClientServiceBase(size_t nIoHandlers,
-                          size_t nControllers,
-                          size_t nMessageHandlers,
-                          size_t nTimers)
-            : ServiceBase(nIoHandlers,
-                          nControllers,
-                          nMessageHandlers,
-                          nTimers)
-            , _resolver(_workers.controllers)
-            , _socket(_workers.ioHandlers)
+        ClientServiceBase(const ThreadsInfo& threadsInfo)
+            : ServiceBase(threadsInfo)
+            , _resolver(_threads.SessionPool())
+            , _socket(_threads.SocketPool())
         {}
 
         void Start(const std::string& host, const std::string& service, size_t nConnects)
@@ -49,14 +43,11 @@ namespace PattyCore
 
             asio::async_connect(_socket,
                                 _endpoints,
-                                asio::bind_executor(_workers.controllers,
+                                asio::bind_executor(_threads.SessionPool(),
                                                     [this, nConnects]
-                                                    (const ErrorCode& error,
-                                                     const Tcp::endpoint& endpoint)
+                                                    (const ErrorCode& error, const Tcp::endpoint& endpoint)
                                                     {
-                                                        OnConnected(error,
-                                                                    std::move(_socket),
-                                                                    nConnects);
+                                                        OnConnected(error, std::move(_socket), nConnects);
                                                     })
                                 );
         }
@@ -69,7 +60,7 @@ namespace PattyCore
                 return;
             }
 
-            _socket = Tcp::socket(_workers.ioHandlers);
+            _socket = Tcp::socket(_threads.SocketPool());
             ConnectAsync(--nConnects);
 
             CreateSession(std::move(socket));

@@ -2,15 +2,21 @@
 #include <Server/Service.hpp>
 #include <Server/Config.hpp>
 
+using namespace Server;
+
 int main()
 {
     try
     {
-        Server::Service service(Server::Config::nIoHandlers,
-                                Server::Config::nControllers,
-                                Server::Config::nMessageHandlers,
-                                Server::Config::nTimers,
-                                Server::Config::port);
+        const ServiceBase::ThreadsInfo threadsInfo =
+        {
+            Config::nSocketThreads,
+            Config::nSessionThreads,
+            Config::nMessageThreads,
+            Config::nTaskThreads,
+        };
+
+        Service service(threadsInfo, Config::port);
         
         service.Start();
         service.Join();
