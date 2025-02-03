@@ -5,58 +5,57 @@
 
 namespace Server
 {
-    Service::Service(const Threads::Info& threadsInfo, uint16_t port)
-        : ServerServiceBase(threadsInfo, port)
-        , _secondTimer(_threads.TaskPool())
+    using namespace std::chrono_literals;
+
+    Service::Service(const ThreadPoolGroup::Info& info, uint16_t port)
+        : ServerServiceBase(info, port)
+        , mSecondTimer(mThreadPoolGroup.GetTaskGroup())
     {
         WaitSecondAsync();
     }
 
-    void Service::OnMessageReceived(OwnedMessage ownedMessage)
+    void Service::OnMessageReceived(OwnedMessage ownedMsg)
     {
-        Client::MessageId messageId =
-            static_cast<Client::MessageId>(ownedMessage.message.header.id);
+        Client::MessageId msgId = static_cast<Client::MessageId>(ownedMsg.msg.header.id);
 
-        switch (messageId)
+        switch (msgId)
         {
         case Client::MessageId::Ping:
-            HandlePing(std::move(ownedMessage.pOwner));
-            break;
-        default:
+            HandlePing(std::move(ownedMsg.owner));
             break;
         }
 
-        _nMessagesHandled.fetch_add(1);
+        mNumMsgsHandled.fetch_add(1);
     }
 
-    void Service::HandlePing(Session::Pointer pSession)
+    void Service::HandlePing(Session::Ptr session)
     {
-        Message message;
-        message.header.id = static_cast<Message::Id>(MessageId::Ping);
+        Message msg;
+        msg.header.id = static_cast<Message::Id>(MessageId::Ping);
 
-        pSession->SendAsync(std::move(message));
+        session->SendAsync(std::move(msg));
     }
 
     void Service::WaitSecondAsync()
     {
-        _secondTimer.expires_after(Seconds(1));
-        _secondTimer.async_wait([this](const ErrorCode& error)
+        mSecondTimer.expires_after(1s);
+        mSecondTimer.async_wait([this](const ErrCode& errCode)
                                 {
-                                    OnSecondElapsed(error);
+                                    OnSecondElapsed(errCode);
                                 });
     }
 
-    void Service::OnSecondElapsed(const ErrorCode& error)
+    void Service::OnSecondElapsed(const ErrCode& errCode)
     {
-        if (error)
+        if (errCode)
         {
-            std::cerr << "[SERVER] Failed to wait a second: " << error << "\n";
+            std::cerr << "[SERVER] Failed to wait a second: " << errCode << "\n";
             return;
         }
 
-        const uint32_t nMessagesHandled = _nMessagesHandled.exchange(0);
+        const uint32_t numMsgsHandled = mNumMsgsHandled.exchange(0);
         WaitSecondAsync();
 
-        std::cout << "[SERVER] The number of messages handled per second: " << nMessagesHandled << "\n";
+        std::cout << "[SERVER] The number of messages handled per second: " << numMsgsHandled << "\n";
     }
 }

@@ -8,6 +8,14 @@
     <ClInclude Include="ServerServiceBase.h" />
     <ClInclude Include="ServiceBase.h" />
     <ClInclude Include="Session.h" />
-    <ClInclude Include="Types.h" />
+    <ClInclude Include="TypeAliases.h" />
+    <ClInclude Include="Pch.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Pch.cpp" />
+    <ClCompile Include="ClientServiceBase.cpp" />
+    <ClCompile Include="Session.cpp" />
+    <ClCompile Include="ServiceBase.cpp" />
+    <ClCompile Include="ServerServiceBase.cpp" />
   </ItemGroup>
 </Project>

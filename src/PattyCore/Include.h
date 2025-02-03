@@ -33,5 +33,5 @@
  *    PattyCore    *
  *-----------------*/
 
-#include <PattyCore/Types.h>
-#include <PattyCore/LockBuffer.h>
+#include "TypeAliases.h"
+#include "LockBuffer.h"

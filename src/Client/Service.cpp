@@ -5,125 +5,122 @@
 
 namespace Client
 {
-    Service::Service(const Threads::Info& threadsInfo)
-        : ClientServiceBase(threadsInfo)
-        , _pingTimerStrand(asio::make_strand(_threads.TaskPool()))
+    using namespace std::chrono_literals;
+
+    Service::Service(const ThreadPoolGroup::Info& info)
+        : ClientServiceBase(info)
+        , mPingTimerStrand(asio::make_strand(mThreadPoolGroup.GetTaskGroup()))
     {}
 
-    void Service::OnSessionRegistered(Session::Pointer pSession)
+    void Service::OnSessionRegistered(Session::Ptr session)
     {
-        asio::post(_pingTimerStrand,
-                   [this, pSession = std::move(pSession)]()
+        asio::post(mPingTimerStrand,
+                   [this, session = std::move(session)]()
                    {
-                       const Session::Id id = pSession->GetId();
-                       _pingTimerMap.emplace(id, std::make_unique<PingTimer>(id, _threads.TaskPool()));
+                       const Session::Id id = session->GetId();
+                       mPingTimerMap.emplace(id, std::make_unique<PingTimer>(id, mThreadPoolGroup.GetTaskGroup()));
 
-                       Ping(std::move(pSession));
+                       Ping(std::move(session));
                    });
     }
 
-    void Service::OnSessionUnregistered(Session::Pointer pSession)
+    void Service::OnSessionUnregistered(Session::Ptr session)
     {
-        asio::post(_pingTimerStrand,
-                   [this, pSession = std::move(pSession)]()
+        asio::post(mPingTimerStrand,
+                   [this, session = std::move(session)]()
                    {
-                       _pingTimerMap.erase(pSession->GetId());
+                       mPingTimerMap.erase(session->GetId());
                    });
     }
 
-    void Service::OnMessageReceived(OwnedMessage ownedMessage)
+    void Service::OnMessageReceived(OwnedMessage ownedMsg)
     {
-        Server::MessageId messageId =
-            static_cast<Server::MessageId>(ownedMessage.message.header.id);
+        const Server::MessageId msgId = static_cast<Server::MessageId>(ownedMsg.msg.header.id);
 
-        switch (messageId)
+        switch (msgId)
         {
         case Server::MessageId::Ping:
-            HandlePing(std::move(ownedMessage.pOwner));
-            break;
-
-        default:
+            HandlePing(std::move(ownedMsg.owner));
             break;
         }
     }
 
-    void Service::Ping(Session::Pointer pSession)
+    void Service::Ping(Session::Ptr session)
     {
-        const Session::Id id = pSession->GetId();
+        const Session::Id id = session->GetId();
 
-        if (_pingTimerMap.count(id) == 0)
+        if (mPingTimerMap.count(id) == 0)
         {
-            std::cerr << *pSession << " Ping error: non-existent PingTimer\n";
+            std::cerr << *session << " Ping error: non-existent PingTimer\n";
             return;
         }
 
-        _pingTimerMap[id]->start = std::chrono::steady_clock::now();
+        mPingTimerMap[id]->start = std::chrono::steady_clock::now();
 
-        Message message;
-        message.header.id = static_cast<Message::Id>(MessageId::Ping);
+        Message msg;
+        msg.header.id = static_cast<Message::Id>(MessageId::Ping);
 
-        pSession->SendAsync(std::move(message));
+        session->SendAsync(std::move(msg));
     }
 
-    void Service::HandlePing(Session::Pointer pSession)
+    void Service::HandlePing(Session::Ptr session)
     {
-        const Session::Id id = pSession->GetId();
+        const Session::Id id = session->GetId();
 
         TimePoint end = std::chrono::steady_clock::now();
 
-        auto elapsed = std::chrono::duration_cast<MicroSeconds>(end - _pingTimerMap[id]->start);
+        auto elapsed = std::chrono::duration_cast<Microseconds>(end - mPingTimerMap[id]->start);
 
-        asio::post(_pingTimerStrand,
-                   [this, pSession]() mutable
+        asio::post(mPingTimerStrand,
+                   [this, session]() mutable
                    {
-                       WaitPingTimerAsync(std::move(pSession));
+                       WaitPingTimerAsync(std::move(session));
                    });
 
-        std::cout << *pSession << " Ping: " << elapsed.count() << "us\n";
+        std::cout << *session << " Ping: " << elapsed.count() << "us\n";
     }
 
-    void Service::WaitPingTimerAsync(Session::Pointer pSession)
+    void Service::WaitPingTimerAsync(Session::Ptr session)
     {
-        const Session::Id id = pSession->GetId();
+        const Session::Id id = session->GetId();
 
-        if (_pingTimerMap.count(id) == 0)
+        if (mPingTimerMap.count(id) == 0)
         {
-            std::cerr << *pSession << " Ping error: non-existent PingTimer\n";
+            std::cerr << *session << " Ping error: non-existent PingTimer\n";
             return;
         }
 
-        _pingTimerMap[id]->timer.expires_after(Seconds(1));
-        _pingTimerMap[id]->timer.async_wait([this, pSession = std::move(pSession)]
-        (const ErrorCode& error) mutable
-                                          {
-                                              OnPingTimerExpired(error,
-                                                                 std::move(pSession));
-                                          });
+        mPingTimerMap[id]->timer.expires_after(1s);
+        mPingTimerMap[id]->timer.async_wait([this, session = std::move(session)]
+                                            (const ErrCode& errCode) mutable
+                                            {
+                                                OnPingTimerExpired(errCode, std::move(session));
+                                            });
     }
 
-    void Service::OnPingTimerExpired(const ErrorCode& error, Session::Pointer pSession)
+    void Service::OnPingTimerExpired(const ErrCode& errCode, Session::Ptr session)
     {
-        if (error)
+        if (errCode)
         {
-            std::cerr << *pSession << " Failed to wait PingTimer: " << error << "\n";
+            std::cerr << *session << " Failed to wait PingTimer: " << errCode << "\n";
             return;
         }
 
-        PingAsync(std::move(pSession));
+        PingAsync(std::move(session));
     }
 
-    void Service::PingAsync(Session::Pointer pSession)
+    void Service::PingAsync(Session::Ptr session)
     {
-        asio::post(_pingTimerStrand,
-                  [this, pSession = std::move(pSession)]()
-                  {
-                      Ping(std::move(pSession));
-                  });
+        asio::post(mPingTimerStrand,
+                   [this, session = std::move(session)]()
+                   {
+                       Ping(std::move(session));
+                   });
     }
 
-    Service::PingTimer::PingTimer(Session::Id id, ThreadPool& timerWorkers)
+    Service::PingTimer::PingTimer(const Session::Id id, ThreadPool& taskGroup)
         : id(id)
-        , timer(timerWorkers)
+        , timer(taskGroup)
     {}
 
     Service::PingTimer::~PingTimer()

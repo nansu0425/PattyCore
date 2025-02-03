@@ -9,18 +9,18 @@ namespace Server
     class Service : public ServerServiceBase
     {
     public:
-        Service(const Threads::Info& threadsInfo, uint16_t port);
+        Service(const ThreadPoolGroup::Info& info, uint16_t port);
 
     protected:
-        virtual void OnMessageReceived(OwnedMessage ownedMessage) override;
+        virtual void OnMessageReceived(OwnedMessage ownedMsg) override;
 
     private:
-        void HandlePing(Session::Pointer pSession);
+        void HandlePing(Session::Ptr session);
         void WaitSecondAsync();
-        void OnSecondElapsed(const ErrorCode& error);
+        void OnSecondElapsed(const ErrCode& errCode);
 
     private:
-        Timer                   _secondTimer;
-        std::atomic<uint32_t>   _nMessagesHandled = 0;
+        Timer                   mSecondTimer;
+        std::atomic<uint32_t>   mNumMsgsHandled = 0;
     };
 }

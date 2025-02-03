@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include <PattyCore/ServiceBase.h>
+#include "ServiceBase.h"
 
 namespace PattyCore
 {
@@ -11,46 +11,17 @@ namespace PattyCore
     class ServerServiceBase : public ServiceBase
     {
     public:
-        ServerServiceBase(const Threads::Info& threadsInfo,
-                          uint16_t port)
-            : ServiceBase(threadsInfo)
-            , _acceptor(_threads.SessionPool(), Tcp::endpoint(Tcp::v4(), port))
-            , _socket(_threads.SocketPool())
-        {}
+        ServerServiceBase(const ThreadPoolGroup::Info& info, uint16_t port);
 
-        void Start()
-        {
-            AcceptAsync();
-            std::cout << "[SERVER] Started!\n";
-        }
+        void Start();
 
     private:
-        void AcceptAsync()
-        {
-            _acceptor.async_accept(_socket,
-                                   [this](const ErrorCode& error)
-                                   {
-                                       OnAccepted(error, std::move(_socket));
-                                   });
-        }
-
-        void OnAccepted(const ErrorCode& error, Tcp::socket socket)
-        {
-            if (error)
-            {
-                std::cerr << "[SERVER] Failed to accept: " << error << "\n";
-                return;
-            }
-
-            _socket = Tcp::socket(_threads.SocketPool());
-            AcceptAsync();
-
-            CreateSession(std::move(socket));
-        }
+        void AcceptAsync();
+        void OnAccepted(const ErrCode& errCode, Tcp::socket socket);
 
     protected:
-        Tcp::acceptor       _acceptor;
-        Tcp::socket         _socket;
+        Tcp::acceptor       mAcceptor;
+        Tcp::socket         mSocket;
 
     };
 }

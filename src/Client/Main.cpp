@@ -8,22 +8,22 @@ int main()
 {
     try
     {
-        size_t nConnects = 0;
+        size_t numConnects = 0;
 
         std::cout << "Enter the number of connects: ";
-        std::cin >> nConnects;
+        std::cin >> numConnects;
 
-        const ServiceBase::Threads::Info threadsInfo =
+        const ServiceBase::ThreadPoolGroup::Info info =
         {
-            Config::nSocketThreads,
-            Config::nSessionThreads,
-            Config::nMessageThreads,
-            Config::nTaskThreads,
+            Config::numSocketThreads,
+            Config::numSessionThreads,
+            Config::numMessageThreads,
+            Config::numTaskThreads,
         };
 
-        Service service(threadsInfo);
+        Service service(info);
         
-        service.Start(Config::host, Config::service, nConnects);
+        service.Start(Config::host, Config::service, numConnects);
         service.Join();
     }
     catch (const std::exception& e)

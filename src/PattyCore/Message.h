@@ -1,7 +1,5 @@
 ﻿#pragma once
 
-#include <PattyCore/Include.h>
-
 namespace PattyCore
 {
     /*---------------*
@@ -13,8 +11,7 @@ namespace PattyCore
         using Id            = uint32_t;
         using Size          = uint32_t;
         using Payload       = std::vector<std::byte>;
-        using Buffer        = LockBuffer<Message>;
-        using Pointer       = std::unique_ptr<Message>;
+        using Ptr           = UPtr<Message>;
 
         /*--------------*
          *    Header    *
@@ -36,39 +33,39 @@ namespace PattyCore
  
         // Push data to playload of message
         template<typename TData>
-        friend Message& operator<<(Message& message, const TData& data)
+        friend Message& operator<<(Message& msg, const TData& data)
         {
             static_assert(std::is_standard_layout<TData>::value, "Tdata must be standard-layout type");
 
-            const size_t offset = message.payload.size();
+            const size_t offset = msg.payload.size();
 
-            message.payload.resize(offset + sizeof(TData));
-            std::memcpy(message.payload.data() + offset, &data, sizeof(TData));
+            msg.payload.resize(offset + sizeof(TData));
+            std::memcpy(msg.payload.data() + offset, &data, sizeof(TData));
 
-            message.header.size = static_cast<Message::Size>(message.CalculateSize());
+            msg.header.size = static_cast<Message::Size>(msg.CalculateSize());
 
-            return message;
+            return msg;
         }
 
         // Pop data from playload of message
         template<typename TData>
-        friend Message& operator>>(Message& message, TData& data)
+        friend Message& operator>>(Message& msg, TData& data)
         {
             static_assert(std::is_standard_layout<TData>::value, "Tdata must be standard-layout type");
 
-            size_t offsetData = message.payload.size() - sizeof(TData);
+            size_t offsetData = msg.payload.size() - sizeof(TData);
             
-            std::memcpy(&data, message.payload.data() + offsetData, sizeof(TData));
-            message.payload.resize(offsetData);
+            std::memcpy(&data, msg.payload.data() + offsetData, sizeof(TData));
+            msg.payload.resize(offsetData);
 
-            message.header.size = static_cast<Message::Size>(message.CalculateSize());
+            msg.header.size = static_cast<Message::Size>(msg.CalculateSize());
 
-            return message;
+            return msg;
         }
 
-        friend std::ostream& operator<<(std::ostream& os, const Message& message)
+        friend std::ostream& operator<<(std::ostream& os, const Message& msg)
         {
-            os << "id: " << message.header.id <<  ", size: " << message.header.size << "B";
+            os << "id: " << msg.header.id <<  ", size: " << msg.header.size << "B";
 
             return os;
         }
@@ -82,26 +79,26 @@ namespace PattyCore
     struct OwnedMessage
     {
         using Buffer        = LockBuffer<OwnedMessage>;
-        using OwnerPointer  = std::shared_ptr<TOwner>;
+        using OwnerPtr      = SPtr<TOwner>;
 
-        OwnerPointer    pOwner;
-        Message         message;
+        OwnerPtr    owner;
+        Message     msg;
 
         OwnedMessage() = default;
 
-        OwnedMessage(OwnerPointer pOwner, Message&& message)
-            : pOwner(std::move(pOwner))
-            , message(std::move(message))
+        OwnedMessage(OwnerPtr owner, Message&& msg)
+            : owner(std::move(owner))
+            , msg(std::move(msg))
         {}
 
-        OwnedMessage(OwnerPointer pOwner, const Message& message)
-            : pOwner(std::move(pOwner))
-            , message(message)
+        OwnedMessage(OwnerPtr owner, const Message& msg)
+            : owner(std::move(owner))
+            , msg(msg)
         {}
 
-        friend std::ostream& operator<<(std::ostream& os, const OwnedMessage& ownedMessage)
+        friend std::ostream& operator<<(std::ostream& os, const OwnedMessage& ownedMsg)
         {
-            os << *ownedMessage.pOwner << " " << ownedMessage.message;
+            os << *ownedMsg.owner << " " << ownedMsg.msg;
 
             return os;
         }

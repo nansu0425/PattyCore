@@ -9,19 +9,19 @@ namespace Client
     class Service : public ClientServiceBase
     {
     public:
-        Service(const Threads::Info& threadsInfo);
+        Service(const ThreadPoolGroup::Info& info);
 
     protected:
-        virtual void OnSessionRegistered(Session::Pointer pSession) override;
-        virtual void OnSessionUnregistered(Session::Pointer pSession) override;
+        virtual void OnSessionRegistered(Session::Ptr session) override;
+        virtual void OnSessionUnregistered(Session::Ptr session) override;
         virtual void OnMessageReceived(OwnedMessage ownedMessage) override;
 
     private:
-        void Ping(Session::Pointer pSession);
-        void HandlePing(Session::Pointer pSession);
-        void WaitPingTimerAsync(Session::Pointer pSession);
-        void OnPingTimerExpired(const ErrorCode& error, Session::Pointer pSession);
-        void PingAsync(Session::Pointer pSession);
+        void Ping(Session::Ptr session);
+        void HandlePing(Session::Ptr session);
+        void WaitPingTimerAsync(Session::Ptr session);
+        void OnPingTimerExpired(const ErrCode& errCode, Session::Ptr session);
+        void PingAsync(Session::Ptr session);
 
     private:
         /*-----------------*
@@ -30,20 +30,20 @@ namespace Client
 
         struct PingTimer
         {
-            using Pointer = std::unique_ptr<PingTimer>;
-            using Map = std::unordered_map<Session::Id, Pointer>;
+            using Ptr           = UPtr<PingTimer>;
+            using Map           = std::unordered_map<Session::Id, Ptr>;
 
-            Session::Id     id;
-            Timer           timer;
-            TimePoint       start;
+            const Session::Id   id;
+            Timer               timer;
+            TimePoint           start;
 
-            PingTimer(Session::Id id, ThreadPool& timerWorkers);
+            PingTimer(const Session::Id id, ThreadPool& taskGroup);
             ~PingTimer();
         };
 
     private:
-        PingTimer::Map      _pingTimerMap;
-        Strand              _pingTimerStrand;
+        PingTimer::Map      mPingTimerMap;
+        Strand              mPingTimerStrand;
 
     };
 }

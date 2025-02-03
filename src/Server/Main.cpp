@@ -8,15 +8,15 @@ int main()
 {
     try
     {
-        const ServiceBase::Threads::Info threadsInfo =
+        const ServiceBase::ThreadPoolGroup::Info info =
         {
-            Config::nSocketThreads,
-            Config::nSessionThreads,
-            Config::nMessageThreads,
-            Config::nTaskThreads,
+            Config::numSocketThreads,
+            Config::numSessionThreads,
+            Config::numMessageThreads,
+            Config::numTaskThreads,
         };
 
-        Service service(threadsInfo, Config::port);
+        Service service(info, Config::port);
         
         service.Start();
         service.Join();
