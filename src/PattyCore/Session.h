@@ -1,7 +1,7 @@
 ﻿#pragma once
 
-#include <PattyCore/Include.hpp>
-#include <PattyCore/Message.hpp>
+#include <PattyCore/Include.h>
+#include <PattyCore/Message.h>
 
 namespace PattyCore
 {

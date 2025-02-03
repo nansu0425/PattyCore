@@ -5,10 +5,10 @@
     <ClCompile Include="Pch.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Pch.hpp" />
-    <ClInclude Include="Service.hpp" />
-    <ClInclude Include="MessageId.hpp" />
-    <ClInclude Include="Include.hpp" />
-    <ClInclude Include="Config.hpp" />
+    <ClInclude Include="Config.h" />
+    <ClInclude Include="Include.h" />
+    <ClInclude Include="MessageId.h" />
+    <ClInclude Include="Pch.h" />
+    <ClInclude Include="Service.h" />
   </ItemGroup>
 </Project>

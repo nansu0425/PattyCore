@@ -33,5 +33,5 @@
  *    PattyCore    *
  *-----------------*/
 
-#include <PattyCore/Types.hpp>
-#include <PattyCore/LockBuffer.hpp>
+#include <PattyCore/Types.h>
+#include <PattyCore/LockBuffer.h>

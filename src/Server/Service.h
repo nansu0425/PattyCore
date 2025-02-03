@@ -1,7 +1,7 @@
 ﻿#pragma once
 
-#include <Server/MessageId.hpp>
-#include <Client/MessageId.hpp>
+#include <Server/MessageId.h>
+#include <Client/MessageId.h>
 
 namespace Server
 {

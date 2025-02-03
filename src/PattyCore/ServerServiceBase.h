@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include <PattyCore/ServiceBase.hpp>
+#include <PattyCore/ServiceBase.h>
 
 namespace PattyCore
 {

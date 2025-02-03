@@ -90,7 +90,7 @@
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <PrecompiledHeader>Use</PrecompiledHeader>
-      <PrecompiledHeaderFile>Server/Pch.hpp</PrecompiledHeaderFile>
+      <PrecompiledHeaderFile>Server/Pch.h</PrecompiledHeaderFile>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -108,7 +108,7 @@
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <PrecompiledHeader>Use</PrecompiledHeader>
-      <PrecompiledHeaderFile>Server/Pch.hpp</PrecompiledHeaderFile>
+      <PrecompiledHeaderFile>Server/Pch.h</PrecompiledHeaderFile>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -126,7 +126,7 @@
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <PrecompiledHeader>Use</PrecompiledHeader>
-      <PrecompiledHeaderFile>Server/Pch.hpp</PrecompiledHeaderFile>
+      <PrecompiledHeaderFile>Server/Pch.h</PrecompiledHeaderFile>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -144,7 +144,7 @@
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <PrecompiledHeader>Use</PrecompiledHeader>
-      <PrecompiledHeaderFile>Server/Pch.hpp</PrecompiledHeaderFile>
+      <PrecompiledHeaderFile>Server/Pch.h</PrecompiledHeaderFile>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -164,11 +164,11 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Config.hpp" />
-    <ClInclude Include="Include.hpp" />
-    <ClInclude Include="MessageId.hpp" />
-    <ClInclude Include="Pch.hpp" />
-    <ClInclude Include="Service.hpp" />
+    <ClInclude Include="Config.h" />
+    <ClInclude Include="Include.h" />
+    <ClInclude Include="MessageId.h" />
+    <ClInclude Include="Pch.h" />
+    <ClInclude Include="Service.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

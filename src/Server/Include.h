@@ -1,5 +1,5 @@
 ﻿#pragma once
 
-#include <PattyCore/ClientServiceBase.hpp>
+#include <PattyCore/ServerServiceBase.h>
 
 using namespace PattyCore;

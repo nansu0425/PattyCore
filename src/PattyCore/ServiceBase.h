@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include <PattyCore/Session.hpp>
+#include <PattyCore/Session.h>
 
 namespace PattyCore
 {

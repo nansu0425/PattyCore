@@ -1,6 +1,6 @@
-﻿#include <Server/Pch.hpp>
-#include <Server/Service.hpp>
-#include <Server/Config.hpp>
+﻿#include <Server/Pch.h>
+#include <Server/Service.h>
+#include <Server/Config.h>
 
 using namespace Server;
 

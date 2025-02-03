@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include <PattyCore/Include.hpp>
+#include <PattyCore/Include.h>
 
 namespace PattyCore
 {

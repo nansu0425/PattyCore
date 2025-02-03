@@ -1,8 +1,8 @@
 ﻿#pragma once
 
-#include <Client/Include.hpp>
+#include <Server/Include.h>
 
-namespace Client
+namespace Server
 {
     /*-----------------*
      *    MessageId    *
@@ -10,6 +10,6 @@ namespace Client
 
     enum class MessageId : Message::Id
     {
-        Ping = 1000,
+        Ping = 500,
     };
 }
