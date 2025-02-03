@@ -3,6 +3,7 @@
   <ItemGroup>
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="Pch.cpp" />
+    <ClCompile Include="Service.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Config.h" />

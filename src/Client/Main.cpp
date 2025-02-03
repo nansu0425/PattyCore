@@ -1,6 +1,6 @@
-﻿#include <Client/Pch.h>
-#include <Client/Service.h>
-#include <Client/Config.h>
+﻿#include "Pch.h"
+#include "Service.h"
+#include "Config.h"
 
 using namespace Client;
 
