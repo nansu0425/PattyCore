@@ -2,6 +2,10 @@
 
 namespace Client
 {
+    /*---------------*
+     *    Service    *
+     *---------------*/
+
     class Service : public ClientServiceBase
     {
     public:
@@ -20,6 +24,10 @@ namespace Client
         void PingAsync(Session::Pointer pSession);
 
     private:
+        /*-----------------*
+         *    PingTimer    *
+         *-----------------*/
+
         struct PingTimer
         {
             using Pointer = std::unique_ptr<PingTimer>;
@@ -33,7 +41,9 @@ namespace Client
             ~PingTimer();
         };
 
+    private:
         PingTimer::Map      _pingTimerMap;
         Strand              _pingTimerStrand;
+
     };
 }
