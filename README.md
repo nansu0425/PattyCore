@@ -6,4 +6,4 @@ C++17과 Asio를 이용해 만들고 있습니다.
 현재 계속 기능 추가와 개선이 진행되고 있습니다.
 
 ## 테스트
-- [소켓 1000개 ping 테스트](https://nansu0425.oopy.io/database/cpp-asio-%EC%84%9C%EB%B2%84-%EC%86%8C%EC%BC%93-1000%EA%B0%9C-ping-%ED%85%8C%EC%8A%A4%ED%8A%B8)
+- [세션 1000개 Ping 테스트](https://nansu0425.oopy.io/database/%EC%84%B8%EC%85%98-1000%EA%B0%9C-ping-%ED%85%8C%EC%8A%A4%ED%8A%B8)
