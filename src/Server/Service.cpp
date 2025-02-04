@@ -56,6 +56,6 @@ namespace Server
         const uint32_t numMsgsHandled = mNumMsgsHandled.exchange(0);
         WaitSecondAsync();
 
-        std::cout << "[SERVER] The number of messages handled per second: " << numMsgsHandled << "\n";
+        std::cout << "[SERVER] The number of messages handled: " << numMsgsHandled << "/s\n";
     }
 }
